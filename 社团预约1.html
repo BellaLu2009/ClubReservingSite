@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Club Booking - Premium Mobile Adaptive</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <style>
+        :root {
+            --apple-bg: #f5f5f7;
+            --apple-text: #1d1d1f;
+            --apple-text-sub: #86868b;
+            --apple-accent: #0071e3;
+            --nav-height: 48px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: var(--apple-bg);
+            color: var(--apple-text);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            /* 优化移动端点击延迟与滚动体验 */
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ==================== 苹果官网原生感导航栏 ==================== */
+        .apple-nav-wrapper {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: rgba(245, 245, 247, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            z-index: 9999;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .nav-container {
+            max-width: 1024px;
+            height: 100%;
+            margin: 0 auto;
+            padding: 0 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .nav-brand {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--apple-text);
+            opacity: 0.8;
+            cursor: pointer;
+            transition: opacity 0.25s ease;
+        }
+        .nav-brand:hover { opacity: 1; }
+
+        .nav-menu { display: flex; height: 100%; align-items: center; gap: 20px; }
+        .nav-item-container { position: relative; height: 100%; display: flex; align-items: center; }
+
+        .nav-link {
+            font-size: 12px;
+            color: var(--apple-text);
+            text-decoration: none;
+            opacity: 0.8;
+            cursor: pointer;
+            font-weight: 400;
+            transition: opacity 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        .nav-menu:hover .nav-link { opacity: 0.4; }
+        .nav-menu .nav-item-container:hover .nav-link, .nav-link.active {
+            opacity: 1 !important;
+            font-weight: 500;
+        }
+
+        /* ==================== 下拉动画面板 (仅PC端展示高级下拉，移动端自动精简) ==================== */
+        .nav-dropdown {
+            position: absolute;
+            top: var(--nav-height);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100vw;
+            background: rgba(245, 245, 247, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            padding: 30px 0;
+            box-sizing: border-box;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -10px);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+            z-index: -1;
+        }
+
+        .nav-item-container:hover .nav-dropdown { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+        .dropdown-content { max-width: 1024px; margin: 0 auto; padding: 0 40px; display: flex; gap: 60px; }
+        .dropdown-column h4 { font-size: 11px; color: var(--apple-text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0; }
+        .dropdown-column ul { list-style: none; padding: 0; margin: 0; }
+        .dropdown-column li { font-size: 16px; font-weight: 600; color: var(--apple-text); margin-bottom: 10px; cursor: pointer; transition: color 0.2s; }
+        .dropdown-column li:hover { color: var(--apple-accent); }
+
+        /* ==================== 主体结构大留白 ==================== */
+        .main-content {
+            max-width: 1024px;
+            margin: 0 auto;
+            padding: 100px 16px 60px 16px;
+            box-sizing: border-box;
+        }
+
+        .hero-section { text-align: center; margin-bottom: 40px; padding: 0 8px; }
+        .hero-title { font-size: 40px; font-weight: 600; letter-spacing: -1px; margin: 0 0 10px 0; line-height: 1.1; }
+        .hero-subtitle { font-size: 19px; color: var(--apple-text-sub); font-weight: 400; margin: 0; line-height: 1.3; }
+
+        /* ==================== 苹果风悬浮阴影卡片网格 ==================== */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 24px;
+        }
+
+        .apple-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 28px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 260px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015), 0 2px 6px rgba(0, 0, 0, 0.015);
+            transition: transform 0.5s cubic-bezier(0.15, 0.85, 0.45, 1), box-shadow 0.5s cubic-bezier(0.15, 0.85, 0.45, 1);
+        }
+
+        /* 悬浮动效 */
+        .apple-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), 0 8px 16px rgba(0, 0, 0, 0.02);
+        }
+
+        .card-meta { font-size: 11px; font-weight: 600; color: #bf4800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .card-title { font-size: 22px; font-weight: 600; margin: 0 0 10px 0; letter-spacing: -0.3px; }
+        .card-desc { font-size: 14px; color: var(--apple-text-sub); line-height: 1.5; margin: 0 0 24px 0; }
+
+        .apple-btn {
+            background-color: var(--apple-accent); color: #ffffff; border: none; border-radius: 980px; padding: 10px 22px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, transform 0.1s ease; display: inline-block; -webkit-user-select: none; user-select: none;
+        }
+        .apple-btn:active { transform: scale(0.98); opacity: 0.9; }
+        .apple-btn:disabled { background-color: #e8e8ed; color: #999999; cursor: not-allowed; transform: none !important; }
+
+        /* ==================== 2D时间网格表：支持手机端横向极速丝滑轻扫 ==================== */
+        .apple-table-wrapper {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015);
+            overflow-x: auto; /* 关键：手机端超出时可横向无缝滑动 */
+            -webkit-overflow-scrolling: touch; /* 让 iOS 滚动具备惯性丝滑感 */
+        }
+        .apple-table { width: 100%; border-collapse: collapse; min-width: 720px; /* 保证表格在手机端不被极限挤压变形 */ }
+        .apple-table th { font-size: 13px; font-weight: 500; color: var(--apple-text-sub); padding: 16px 10px; border-bottom: 1px solid #e8e8ed; }
+        .apple-table td { padding: 20px 10px; text-align: center; border-bottom: 1px solid #f5f5f7; vertical-align: middle; }
+
+        .apple-booking-badge {
+            background: #f5f5f7; border-radius: 14px; padding: 14px; display: inline-block; text-align: left; min-width: 120px; box-shadow: 0 2px 8px rgba(0,0,0,0.01); animation: fadeInCard 0.4s ease forwards;
+        }
+        .badge-title { font-size: 14px; font-weight: 600; color: var(--apple-text); }
+        .badge-user { font-size: 11px; color: var(--apple-text-sub); display: block; margin: 4px 0 8px 0; }
+
+        .apple-link-btn { background: none; border: none; color: var(--apple-accent); font-size: 12px; padding: 0; cursor: pointer; font-weight: 500; }
+
+        /* 苹果输入凭证表单 */
+        .apple-input-card { background: #ffffff; border-radius: 24px; padding: 32px; max-width: 440px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.015); box-sizing: border-box; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--apple-text-sub); margin-bottom: 8px; }
+        .apple-input { width: 100%; height: 48px; background: #f5f5f7; border: 1px solid transparent; border-radius: 12px; padding: 0 16px; font-size: 16px; box-sizing: border-box; outline: none; transition: all 0.2s; -webkit-appearance: none; }
+        .apple-input:focus { background: #ffffff; border-color: var(--apple-accent); }
+
+        .status-pill { display: inline-block; padding: 6px 14px; border-radius: 50px; font-size: 12px; background: #e8e8ed; margin-top: 12px; font-weight: 500; }
+        .status-pill.active { background: #eaf5ea; color: #1a7f1a; }
+
+        @keyframes fadeInCard { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+        /* ==================== 📱 核心：针对移动端屏幕的媒体查询适配 ==================== */
+        @media (max-width: 768px) {
+            .nav-container { padding: 0 16px; }
+            .nav-menu { gap: 16px; } /* 缩小手机顶部导航间距 */
+            .nav-dropdown { display: none !important; } /* 手机端隐藏复杂的PC鼠标悬停下拉面板 */
+
+            .main-content { padding-top: 84px; } /* 缩小手机端顶部留白 */
+
+            .hero-title { font-size: 32px; } /* 减小手机端巨幕标题字号，防止折行过多 */
+            .hero-subtitle { font-size: 17px; }
+
+            .grid-container {
+                grid-template-columns: 1fr; /* 手机端强制让卡片单列纵向铺满 */
+                gap: 16px;
+            }
+            .apple-card { padding: 24px; min-height: 220px; }
+            .card-title { font-size: 20px; }
+
+            .apple-input-card { padding: 24px; }
+
+            /* 在手机端右侧弱提示可以横向轻扫查看完整表格 */
+            .apple-table-wrapper::after {
+                content: "← 左右轻扫查看完整课表 →";
+                display: block;
+                text-align: center;
+                font-size: 11px;
+                color: var(--apple-text-sub);
+                margin-top: 10px;
+                font-weight: 400;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div class="apple-nav-wrapper">
+        <div class="nav-container">
+            <div class="nav-brand" @click="activeTab = 'clubs'">社团空间</div>
+            <div class="nav-menu">
+
+                <div class="nav-item-container">
+                    <span class="nav-link" :class="{active: activeTab === 'clubs'}" @click="activeTab = 'clubs'">探索社团</span>
+                    <div class="nav-dropdown">
+                        <div class="dropdown-content">
+                            <div class="dropdown-column">
+                                <h4>快捷通道</h4>
+                                <ul>
+                                    <li @click="activeTab = 'clubs'">浏览全选项目</li>
+                                    <li @click="activeTab = 'profile'">修改登记信息</li>
+                                </ul>
+                            </div>
+                            <div class="dropdown-column">
+                                <h4>今日热门</h4>
+                                <ul>
+                                    <li>机器人实验室</li>
+                                    <li>潮流篮球社</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-item-container">
+                    <span class="nav-link" :class="{active: activeTab === 'timetable'}" @click="activeTab = 'timetable'">专属课表</span>
+                    <div class="nav-dropdown">
+                        <div class="dropdown-content">
+                            <div class="dropdown-column">
+                                <h4>我的日程</h4>
+                                <ul>
+                                    <li @click="activeTab = 'timetable'">查看周一至周五课表</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-item-container">
+                    <span class="nav-link" :class="{active: activeTab === 'profile'}" @click="activeTab = 'profile'">个人凭证</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content">
+
+        <div v-if="activeTab === 'clubs'">
+            <div class="hero-section">
+                <h1 class="hero-title">选你所爱，探索无限可能。</h1>
+                <p class="hero-subtitle">每周固定时段，名额限时开放预约。</p>
+                <div v-if="isLoggedIn" class="status-pill active">已绑定：{{ userClass }} · {{ userName }}</div>
+                <div v-else class="status-pill">未绑定凭证 · 暂不可约</div>
+            </div>
+
+            <div class="grid-container">
+                <div class="apple-card" v-for="club in clubs" :key="club.id">
+                    <div>
+                        <div class="card-meta">每周{{ club.dayOfWeekText }} · {{ club.timeSlot }}</div>
+                        <h2 class="card-title">{{ club.name }}</h2>
+                        <p class="card-desc">{{ club.description }}</p>
+                    </div>
+                    <div>
+                        <button class="apple-btn" :disabled="!isLoggedIn" @click="handleBook(club)">
+                            {{ isLoggedIn ? '预约' : '请先绑定个人凭证' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="activeTab === 'timetable'">
+            <div class="hero-section">
+                <h1 class="hero-title">本周日程。</h1>
+                <p class="hero-subtitle">在此精简查看您已预约的所有社团时间表。</p>
+            </div>
+
+            <div class="apple-table-wrapper">
+                <table class="apple-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">时段</th>
+                            <th>周一</th>
+                            <th>周二</th>
+                            <th>周三</th>
+                            <th>周四</th>
+                            <th>周五</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="slot in allTimeSlots" :key="slot">
+                            <td style="font-weight: 600; font-size: 13px;">{{ slot }}</td>
+                            <td v-for="day in [1,2,3,4,5]" :key="day">
+                                <div v-if="getBooking(day, slot)" class="apple-booking-badge">
+                                    <div class="badge-title">{{ getBooking(day, slot).clubName }}</div>
+                                    <span class="badge-user">{{ getBooking(day, slot).studentClass }} {{ getBooking(day, slot).studentName }}</span>
+                                    <button class="apple-link-btn" @click="cancelBooking(getBooking(day, slot).id)">取消预约</button>
+                                </div>
+                                <div v-else style="color: #e8e8ed;">—</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div v-if="activeTab === 'profile'">
+            <div class="hero-section">
+                <h1 class="hero-title">设置您的凭证。</h1>
+                <p class="hero-subtitle">输入真实班级和姓名，用于核验并生成您的私人时间表。</p>
+            </div>
+
+            <div class="apple-input-card">
+                <div class="form-group">
+                    <label>班级</label>
+                    <input type="text" class="apple-input" v-model="inputClass" placeholder="如：高一3班">
+                </div>
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input type="text" class="apple-input" v-model="inputName" placeholder="如：张三">
+                </div>
+                <button class="apple-btn" style="width: 100%; height: 48px; font-size: 15px; margin-top: 10px; border-radius: 12px;" @click="saveProfile">
+                    保存并继续
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    const { createApp, ref, computed } = Vue;
+
+    createApp({
+        setup() {
+            const activeTab = ref('profile');
+            const userName = ref('');
+            const userClass = ref('');
+            const inputName = ref('');
+            const inputClass = ref('');
+            const isLoggedIn = computed(() => userName.value !== '' && userClass.value !== '');
+
+            const clubs = ref([
+                { id: 1, name: '机器人实验室', description: '探索 VEX 机器人工程架构，单片机交互开发与自动化智能硬件编程。', dayOfWeek: 2, dayOfWeekText: '二', timeSlot: '16:00 - 17:30' },
+                { id: 2, name: '潮流篮球社', description: '高强度全场战术配合，花式运球切磋以及队内正规对抗赛。', dayOfWeek: 4, dayOfWeekText: '四', timeSlot: '16:00 - 17:30' },
+                { id: 3, name: '摇滚吉他社', description: '从零基础和弦指弹到电声器乐合奏，组建极具风格的校园独立乐队。', dayOfWeek: 1, dayOfWeekText: '一', timeSlot: '17:30 - 19:00' },
+                { id: 4, name: '视觉创意美术社', description: '涵盖先锋现代素描、商业水彩插画及数码手绘板绘的多元创作。', dayOfWeek: 3, dayOfWeekText: '三', timeSlot: '16:00 - 17:30' },
+                { id: 5, name: '室内羽毛球社', description: '提供专业级木地板防滑场地，高远球与大力扣杀的技术交流平台。', dayOfWeek: 5, dayOfWeekText: '五', timeSlot: '17:30 - 19:00' }
+            ]);
+
+            const allTimeSlots = ['16:00 - 17:30', '17:30 - 19:00'];
+            const bookings = ref([]);
+
+            const saveProfile = () => {
+                if (!inputClass.value || !inputName.value) {
+                    alert('请完整填写班级和姓名。');
+                    return;
+                }
+                userClass.value = inputClass.value;
+                userName.value = inputName.value;
+                activeTab.value = 'clubs';
+            };
+
+            const handleBook = (club) => {
+                const isConflict = bookings.value.some(b =>
+                    b.studentName === userName.value &&
+                    b.studentClass === userClass.value &&
+                    b.dayOfWeek === club.dayOfWeek &&
+                    b.timeSlot === club.timeSlot
+                );
+                if (isConflict) {
+                    alert('预约冲突：该时段您已预约了其他社团。');
+                    return;
+                }
+                bookings.value.push({
+                    id: Date.now(),
+                    clubName: club.name,
+                    dayOfWeek: club.dayOfWeek,
+                    timeSlot: club.timeSlot,
+                    studentName: userName.value,
+                    studentClass: userClass.value
+                });
+                alert(`成功预约 ${club.name}`);
+            };
+
+            const getBooking = (day, slot) => {
+                return bookings.value.find(b =>
+                    b.studentName === userName.value &&
+                    b.studentClass === userClass.value &&
+                    b.dayOfWeek === day &&
+                    b.timeSlot === slot
+                );
+            };
+
+            const cancelBooking = (id) => {
+                if(confirm('确定要放弃该社团预约吗？')) {
+                    bookings.value = bookings.value.filter(b => b.id !== id);
+                }
+            };
+
+            return { activeTab, clubs, allTimeSlots, userName, userClass, inputName, inputClass, isLoggedIn, saveProfile, handleBook, getBooking, cancelBooking };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
