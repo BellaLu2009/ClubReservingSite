@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            padding: 20px;
+            background-color: #fff;
+            border-right: 1px solid #dee2e6;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+        }
+        .sidebar-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+        .nav-link {
+            font-size: 1.05rem;
+            color: #343a40;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+        .nav-link:hover {
+            background-color: #e9ecef;
+        }
+        .nav-link.active:hover {
+            background-color: #0b5ed7;
+        }
+        .card-header {
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<div id="admin-app">
+    <div class="sidebar">
+        <h1 class="sidebar-header">管理后台</h1>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" :class="{ active: activeView === 'clubs' }" href="#" @click.prevent="activeView = 'clubs'">
+                    <i class="bi bi-collection-fill me-2"></i> 社团管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" :class="{ active: activeView === 'users' }" href="#" @click.prevent="activeView = 'users'">
+                    <i class="bi bi-people-fill me-2"></i> 用户管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" :class="{ active: activeView === 'reservations' }" href="#" @click.prevent="activeView = 'reservations'">
+                    <i class="bi bi-calendar-check-fill me-2"></i> 预约记录
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <main class="main-content">
+        <!-- 社团管理视图 -->
+        <div v-if="activeView === 'clubs'">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>社团管理</h2>
+                <button class="btn btn-primary" @click="openClubModal()">
+                    <i class="bi bi-plus-circle me-1"></i> 新增社团
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>社团名称</th>
+                                <th>分类</th>
+                                <th>负责人ID</th>
+                                <th>容量</th>
+                                <th class="text-end">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="club in clubs" :key="club.club_id">
+                                <td>{{ club.club_id }}</td>
+                                <td>{{ club.name }}</td>
+                                <td><span class="badge bg-secondary">{{ club.category }}</span></td>
+                                <td>{{ club.leader_id }}</td>
+                                <td>{{ club.current_capacity }} / {{ club.max_capacity }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-2" @click="openClubModal(club)">编辑</button>
+                                    <button class="btn btn-sm btn-outline-danger" @click="deleteClub(club.club_id)">删除</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 其他视图占位符 -->
+        <div v-if="activeView !== 'clubs'" class="text-center mt-5">
+            <h3 class="text-muted">该模块正在建设中...</h3>
+        </div>
+    </main>
+
+    <!-- 社团编辑/新增 Modal -->
+    <div class="modal fade" id="clubModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ isEditingClub ? '编辑社团' : '新增社团' }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">社团名称</label>
+                            <input type="text" class="form-control" v-model="editableClub.name">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">分类</label>
+                            <select class="form-select" v-model="editableClub.category">
+                                <option>ACADEMIC</option>
+                                <option>SPORTS</option>
+                                <option>PUBLIC_WELFARE</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">描述</label>
+                            <textarea class="form-control" rows="3" v-model="editableClub.description"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">负责人ID</label>
+                            <input type="text" class="form-control" v-model="editableClub.leader_id">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">活动地点</label>
+                            <input type="text" class="form-control" v-model="editableClub.location">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">最大容量</label>
+                            <input type="number" class="form-control" v-model.number="editableClub.max_capacity">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">活动日 (周)</label>
+                            <input type="number" class="form-control" v-model.number="editableClub.day_of_week" placeholder="1-5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">开始时间</label>
+                            <input type="time" class="form-control" v-model="editableClub.start_time">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" @click="saveClub">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            const API_BASE_URL = 'http://127.0.0.1:5001/api';
+            const activeView = ref('clubs');
+            const clubs = ref([]);
+            const isEditingClub = ref(false);
+            const editableClub = ref({});
+            let clubModal = null;
+
+            const fetchClubs = async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/clubs`);
+                    clubs.value = await response.json();
+                } catch (error) {
+                    console.error("获取社团列表失败:", error);
+                    alert("获取社团列表失败!");
+                }
+            };
+
+            const openClubModal = (club = null) => {
+                if (club) {
+                    isEditingClub.value = true;
+                    editableClub.value = { ...club }; // Create a copy to edit
+                } else {
+                    isEditingClub.value = false;
+                    editableClub.value = { category: 'ACADEMIC' }; // Default new club
+                }
+                clubModal.show();
+            };
+
+            const saveClub = async () => {
+                // TODO: 在此实现新增或更新社团的 API 调用
+                alert(`（模拟）保存社团: ${editableClub.value.name}`);
+                console.log("Saving club:", editableClub.value);
+                // if (isEditingClub.value) {
+                //     // Call PUT /api/clubs/{id}
+                // } else {
+                //     // Call POST /api/clubs
+                // }
+                clubModal.hide();
+                await fetchClubs(); // Refresh list
+            };
+
+            const deleteClub = async (clubId) => {
+                if (confirm(`确定要删除 ID 为 ${clubId} 的社团吗？`)) {
+                    // TODO: 在此实现删除社团的 API 调用
+                    alert(`（模拟）删除社团: ${clubId}`);
+                    // await fetch(`${API_BASE_URL}/clubs/${clubId}`, { method: 'DELETE' });
+                    await fetchClubs(); // Refresh list
+                }
+            };
+
+            onMounted(() => {
+                fetchClubs();
+                clubModal = new bootstrap.Modal(document.getElementById('clubModal'));
+            });
+
+            return {
+                activeView,
+                clubs,
+                isEditingClub,
+                editableClub,
+                openClubModal,
+                saveClub,
+                deleteClub,
+            };
+        }
+    }).mount('#admin-app');
+</script>
+</body>
+</html>

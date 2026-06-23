@@ -1,5 +1,6 @@
 import sqlite3
 import datetime
+import json
 from flask import Flask, jsonify, request, g, render_template
 from flask_cors import CORS
 import os
@@ -59,15 +60,15 @@ def init_db():
         clubs_data = [
             ("c_1", "机器人实验室", "ACADEMIC", "探索 VEX 机器人工程架构...", "u_01", "综合楼402", 25, 2, "16:00:00", "17:30:00"),
             ("c_2", "潮流篮球社", "SPORTS", "高强度全场战术配合...", "u_other", "室内体育馆A厅", 30, 4, "16:00:00", "17:30:00"),
-            ("c_3", "摇滚吉他社", "CRAFT", "从零基础和弦指弹...", "u_other", "艺术楼小剧场", 15, 1, "17:30:00", "19:00:00"),
-            ("c_4", "视觉创意美术社", "CRAFT", "涵盖现代素描...", "u_other", "美术画室B", 20, 3, "16:00:00", "17:30:00"),
+            ("c_3", "青年志愿者协会", "PUBLIC_WELFARE", "参与社区服务和公益活动，传递爱心。", "u_other", "学生活动中心", 40, 1, "17:30:00", "19:00:00"),
+            ("c_4", "校园环保社", "PUBLIC_WELFARE", "组织校园环保活动，宣传环保理念。", "u_other", "校园广场", 35, 3, "16:00:00", "17:30:00"),
             ("c_5", "室内羽毛球社", "SPORTS", "提供专业级木地板场地...", "u_other", "羽毛球馆3号场", 20, 2, "16:00:00", "17:30:00")
         ]
         cursor.executemany('INSERT INTO clubs VALUES (?,?,?,?,?,?,?,?,?,?)', clubs_data)
         cursor.execute('INSERT INTO reservations VALUES (?,?,?,?,?)', ('r_init_1', 'u_01', 'c_4', 'ACTIVE', (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat()))
         notifications_data = [
             ('n_1', 'c_1', '本周二机器人固件配置须知', '请所有加入机器人社的同学...', (datetime.datetime.now() - datetime.timedelta(hours=1)).isoformat()),
-            ('n_2', 'c_4', '创意美术社画材自带通知', '本周三集会进行水彩静物写生...', (datetime.datetime.now() - datetime.timedelta(hours=2)).isoformat())
+            ('n_2', 'c_4', '本周环保活动通知', '本周三下午将在校园广场集合，进行垃圾分类宣传活动...', (datetime.datetime.now() - datetime.timedelta(hours=2)).isoformat())
         ]
         cursor.executemany('INSERT INTO notifications VALUES (?,?,?,?,?)', notifications_data)
         db.commit()
@@ -76,16 +77,27 @@ def init_db():
 def to_dict(row):
     return dict(row) if row else None
 
-# --- Frontend Route ---
+# --- Frontend Routes ---
 @app.route('/')
 def index():
     return render_template('社团预约.html')
 
-# --- API Endpoints (No changes below this line) ---
+@app.route('/admin')
+def admin_panel():
+    return render_template('admin.html')
+
+# --- API Endpoints ---
 @app.route('/api/user/<user_id>')
 def get_user(user_id):
-    user = get_db().execute('SELECT * FROM users WHERE user_id = ?', (user_id,)).fetchone()
-    return jsonify(to_dict(user)) if user else (jsonify({"error": "User not found"}), 404)
+    user_row = get_db().execute('SELECT * FROM users WHERE user_id = ?', (user_id,)).fetchone()
+    if not user_row:
+        return jsonify({"error": "User not found"}), 404
+    
+    user_dict = to_dict(user_row)
+    if user_dict.get('roles'):
+        user_dict['roles'] = json.loads(user_dict['roles'])
+    
+    return jsonify(user_dict)
 
 @app.route('/api/clubs')
 def get_clubs():
@@ -169,4 +181,4 @@ def publish_notice():
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True, port=5001)
+    app.run(host='0.0.0.0', debug=True, port=5001)

@@ -139,6 +139,7 @@
         .apple-btn:disabled { background-color: #e8e8ed; color: #999999; cursor: not-allowed; }
         .apple-btn.danger { background-color: var(--apple-danger); }
         .apple-btn.success { background-color: var(--apple-success); }
+        .apple-btn.secondary { background-color: #6c757d; }
 
         .apple-input {
             width: 100%; height: 44px; background: #f5f5f7; border: 1px solid transparent;
@@ -216,7 +217,7 @@
                     <button class="tab-btn" :class="{active: selectedCategory === 'ALL'}" @click="selectedCategory = 'ALL'">全部</button>
                     <button class="tab-btn" :class="{active: selectedCategory === 'SPORTS'}" @click="selectedCategory = 'SPORTS'">体育类</button>
                     <button class="tab-btn" :class="{active: selectedCategory === 'ACADEMIC'}" @click="selectedCategory = 'ACADEMIC'">学术类</button>
-                    <button class="tab-btn" :class="{active: selectedCategory === 'CRAFT'}" @click="selectedCategory = 'CRAFT'">工艺类</button>
+                    <button class="tab-btn" :class="{active: selectedCategory === 'PUBLIC_WELFARE'}" @click="selectedCategory = 'PUBLIC_WELFARE'">公益类</button>
                 </div>
             </div>
 
@@ -361,19 +362,21 @@
                             班级：{{ currentUser.class_name }} &nbsp;|&nbsp; 学号：{{ currentUser.student_id }}
                         </div>
                         <div style="margin-top:10px; display:flex; gap:6px;">
-                            <span class="status-tag">STUDENT (学生)</span>
-                            <span class="status-tag leader">CLUB_LEADER (社长)</span>
+                            <span v-for="role in currentUser.roles" :key="role" class="status-tag" :class="{leader: role === 'CLUB_LEADER'}">{{ role }}</span>
                         </div>
                     </div>
                 </div>
 
                 <div style="padding:32px;">
-                    <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">安全与修改项</h3>
-                    <div style="margin-bottom:16px;">
+                    <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">功能与选项</h3>
+                    <a v-if="isLeader" href="/admin" target="_blank" class="apple-btn secondary" style="width:100%; height:40px; text-align:center; text-decoration:none; line-height:2.2;">
+                        进入后台管理系统
+                    </a>
+                    <div style="margin-top:16px;">
                         <label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">重置登录新密码</label>
                         <input type="password" class="apple-input" placeholder="请输入新设定的专属密码">
                     </div>
-                    <button class="apple-btn" style="width:100%; height:40px;" @click="alert('密码本地模拟修改修改成功')">保存更改</button>
+                    <button class="apple-btn" style="width:100%; height:40px; margin-top:10px;" @click="alert('密码本地模拟修改修改成功')">保存更改</button>
                 </div>
             </div>
         </div>
@@ -389,7 +392,7 @@
             const API_BASE_URL = 'http://127.0.0.1:5001/api';
 
             // --- State ---
-            const currentUser = ref({});
+            const currentUser = ref({ roles: [] });
             const currentRole = ref('STUDENT');
             const activeTab = ref('search');
             const dbClubs = ref([]);
@@ -447,6 +450,8 @@
             const filteredNotifications = computed(() => dbNotifications.value);
 
             const leaderClub = computed(() => dbClubs.value.find(c => c.leader_id === currentUser.value.user_id));
+
+            const isLeader = computed(() => currentUser.value.roles && currentUser.value.roles.includes('CLUB_LEADER'));
 
             // --- Methods ---
             const switchRole = (role) => {
@@ -547,6 +552,7 @@
             return {
                 currentUser, currentRole, activeTab, searchQuery, selectedCategory, filteredClubs,
                 timeSlots, noticeForm, leaderClub, leaderReservations, filteredNotifications,
+                isLeader,
                 switchRole, isReserved, handleReserve, handleCancel, getMatchReservation,
                 showScheduleDetail, publishNotice, dayText, getClubName, formatTime
             };
