@@ -100,6 +100,9 @@ def init_db():
 def to_dict(row):
     return dict(row) if row else None
 
+def is_admin():
+    return current_user.is_authenticated and 'ADMIN' in current_user.roles
+
 @app.route('/')
 def index():
     return render_template('社团预约.html')
@@ -107,10 +110,39 @@ def index():
 @app.route('/admin')
 @login_required
 def admin_panel():
-    # CRITICAL FIX: Only allow users with the 'ADMIN' role
-    if 'ADMIN' not in current_user.roles:
+    if not is_admin():
         return "Access Denied: You do not have administrator privileges.", 403
     return render_template('admin.html')
+
+@app.route('/api/admin/users', methods=['GET'])
+@login_required
+def admin_get_users():
+    if not is_admin(): return jsonify({"error": "Unauthorized"}), 403
+    db = get_db()
+    users = db.execute('SELECT user_id, username, name, class_name, student_id, roles FROM users').fetchall()
+    return jsonify([to_dict(u) for u in users])
+
+@app.route('/api/admin/user/<user_id>', methods=['PUT', 'DELETE'])
+@login_required
+def admin_manage_user(user_id):
+    if not is_admin(): return jsonify({"error": "Unauthorized"}), 403
+    db = get_db()
+    
+    if request.method == 'DELETE':
+        db.execute('DELETE FROM users WHERE user_id = ?', (user_id,))
+        db.commit()
+        return jsonify({"message": "User deleted successfully."})
+
+    if request.method == 'PUT':
+        data = request.json
+        roles = data.get('roles')
+        if roles is not None:
+            roles_json = json.dumps(roles)
+            db.execute('UPDATE users SET roles = ? WHERE user_id = ?', (roles_json, user_id))
+            db.commit()
+            return jsonify({"message": "User roles updated."})
+        return jsonify({"error": "No roles provided"}), 400
+
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -170,14 +202,12 @@ def get_session():
 def update_profile():
     db = get_db()
     
-    # Handle username update from form data
     new_username = request.form.get('username')
     if new_username and new_username != current_user.username:
         if db.execute('SELECT user_id FROM users WHERE username = ?', (new_username,)).fetchone():
             return jsonify({"error": "用户名已存在"}), 409
         db.execute('UPDATE users SET username = ? WHERE user_id = ?', (new_username, current_user.id))
 
-    # Handle avatar file upload
     if 'avatar' in request.files:
         file = request.files['avatar']
         if file and file.filename != '' and allowed_file(file.filename):

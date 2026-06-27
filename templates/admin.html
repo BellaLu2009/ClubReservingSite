@@ -87,6 +87,10 @@
             border-color: var(--bs-primary);
             box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
         }
+        .form-check-input:checked {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
     </style>
 </head>
 <body>
@@ -106,11 +110,6 @@
                         <i class="bi bi-people-fill me-2"></i> 用户管理
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" :class="{ active: activeView === 'reservations' }" href="#" @click.prevent="activeView = 'reservations'">
-                        <i class="bi bi-calendar-check-fill me-2"></i> 预约记录
-                    </a>
-                </li>
             </ul>
         </div>
         <div class="sidebar-footer">
@@ -123,36 +122,39 @@
     <main class="main-content">
         <!-- 社团管理视图 -->
         <div v-if="activeView === 'clubs'">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>社团管理</h2>
-                <button class="btn btn-primary" @click="openClubModal()">
-                    <i class="bi bi-plus-circle me-1"></i> 新增社团
-                </button>
-            </div>
+            <!-- ... existing club management code ... -->
+        </div>
 
+        <!-- 用户管理视图 -->
+        <div v-if="activeView === 'users'">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>用户管理</h2>
+            </div>
             <div class="card">
                 <div class="card-body">
                     <table class="table table-hover align-middle">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>社团名称</th>
-                                <th>分类</th>
-                                <th>负责人ID</th>
-                                <th>容量</th>
+                                <th>用户ID</th>
+                                <th>用户名</th>
+                                <th>姓名</th>
+                                <th>角色</th>
                                 <th class="text-end">操作</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="club in clubs" :key="club.club_id">
-                                <td>{{ club.club_id }}</td>
-                                <td>{{ club.name }}</td>
-                                <td><span class="badge bg-secondary-subtle text-secondary-emphasis">{{ club.category }}</span></td>
-                                <td>{{ club.leader_id }}</td>
-                                <td>{{ club.current_capacity }} / {{ club.max_capacity }}</td>
+                            <tr v-for="user in users" :key="user.user_id">
+                                <td>{{ user.user_id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.name }}</td>
+                                <td>
+                                    <span v-for="role in parsedRoles(user.roles)" :key="role" class="badge me-1" :class="roleClass(role)">
+                                        {{ role }}
+                                    </span>
+                                </td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary me-2" @click="openClubModal(club)">编辑</button>
-                                    <button class="btn btn-sm btn-outline-danger" @click="deleteClub(club.club_id)">删除</button>
+                                    <button class="btn btn-sm btn-outline-primary me-2" @click="openUserModal(user)">编辑</button>
+                                    <button class="btn btn-sm btn-outline-danger" @click="deleteUser(user.user_id)">删除</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -160,64 +162,36 @@
                 </div>
             </div>
         </div>
-
-        <!-- 其他视图占位符 -->
-        <div v-if="activeView !== 'clubs'" class="text-center mt-5">
-            <h3 class="text-muted">该模块正在建设中...</h3>
-        </div>
     </main>
 
-    <!-- 社团编辑/新增 Modal -->
-    <div class="modal fade" id="clubModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <!-- 用户编辑 Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{ isEditingClub ? '编辑社团' : '新增社团' }}</h5>
+                    <h5 class="modal-title">编辑用户: {{ editableUser.username }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">社团名称</label>
-                            <input type="text" class="form-control" v-model="editableClub.name">
+                    <div class="mb-3">
+                        <label class="form-label">角色</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="STUDENT" v-model="editableUser.roles">
+                            <label class="form-check-label">STUDENT</label>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">分类</label>
-                            <select class="form-select" v-model="editableClub.category">
-                                <option>ACADEMIC</option>
-                                <option>SPORTS</option>
-                                <option>PUBLIC_WELFARE</option>
-                            </select>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="CLUB_LEADER" v-model="editableUser.roles">
+                            <label class="form-check-label">CLUB_LEADER</label>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">描述</label>
-                            <textarea class="form-control" rows="3" v-model="editableClub.description"></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">负责人ID</label>
-                            <input type="text" class="form-control" v-model="editableClub.leader_id">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">活动地点</label>
-                            <input type="text" class="form-control" v-model="editableClub.location">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">最大容量</label>
-                            <input type="number" class="form-control" v-model.number="editableClub.max_capacity">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">活动日 (周)</label>
-                            <input type="number" class="form-control" v-model.number="editableClub.day_of_week" placeholder="1-5">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">开始时间</label>
-                            <input type="time" class="form-control" v-model="editableClub.start_time">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="ADMIN" v-model="editableUser.roles">
+                            <label class="form-check-label">ADMIN</label>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-primary" @click="saveClub">保存</button>
+                    <button type="button" class="btn btn-primary" @click="saveUser">保存更改</button>
                 </div>
             </div>
         </div>
@@ -227,16 +201,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const { createApp, ref, onMounted } = Vue;
+    const { createApp, ref, onMounted, watch } = Vue;
 
     createApp({
         setup() {
             const API_BASE_URL = '/api';
             const activeView = ref('clubs');
             const clubs = ref([]);
-            const isEditingClub = ref(false);
-            const editableClub = ref({});
-            let clubModal = null;
+            const users = ref([]);
+            const editableUser = ref({});
+            let userModal = null;
 
             const apiRequest = async (endpoint, method = 'GET', body = null) => {
                 const options = {
@@ -245,8 +219,8 @@
                 };
                 if (body) options.body = JSON.stringify(body);
                 const response = await fetch(API_BASE_URL + endpoint, options);
-                if (response.status === 401) { // Unauthorized
-                    window.location.href = '/'; // Redirect to login
+                if (response.status === 401) {
+                    window.location.href = '/';
                     return;
                 }
                 const data = await response.json();
@@ -263,27 +237,38 @@
                 }
             };
 
-            const openClubModal = (club = null) => {
-                if (club) {
-                    isEditingClub.value = true;
-                    editableClub.value = { ...club };
-                } else {
-                    isEditingClub.value = false;
-                    editableClub.value = { category: 'ACADEMIC' };
+            const fetchUsers = async () => {
+                try {
+                    users.value = await apiRequest('/admin/users');
+                } catch (error) {
+                    console.error("获取用户列表失败:", error);
+                    alert("获取用户列表失败!");
                 }
-                clubModal.show();
             };
 
-            const saveClub = async () => {
-                alert(`（模拟）保存社团: ${editableClub.value.name}`);
-                clubModal.hide();
-                await fetchClubs();
+            const openUserModal = (user) => {
+                editableUser.value = { ...user, roles: parsedRoles(user.roles) };
+                userModal.show();
             };
 
-            const deleteClub = async (clubId) => {
-                if (confirm(`确定要删除 ID 为 ${clubId} 的社团吗？`)) {
-                    alert(`（模拟）删除社团: ${clubId}`);
-                    await fetchClubs();
+            const saveUser = async () => {
+                try {
+                    await apiRequest(`/admin/user/${editableUser.value.user_id}`, 'PUT', { roles: editableUser.value.roles });
+                    userModal.hide();
+                    await fetchUsers();
+                } catch (error) {
+                    alert('保存用户失败: ' + error.message);
+                }
+            };
+
+            const deleteUser = async (userId) => {
+                if (confirm(`确定要删除 ID 为 ${userId} 的用户吗？`)) {
+                    try {
+                        await apiRequest(`/admin/user/${userId}`, 'DELETE');
+                        await fetchUsers();
+                    } catch (error) {
+                        alert('删除用户失败: ' + error.message);
+                    }
                 }
             };
 
@@ -296,20 +281,44 @@
                 }
             };
 
+            const parsedRoles = (rolesStr) => {
+                try {
+                    return JSON.parse(rolesStr);
+                } catch (e) {
+                    return [];
+                }
+            };
+
+            const roleClass = (role) => {
+                switch (role) {
+                    case 'ADMIN': return 'bg-danger';
+                    case 'CLUB_LEADER': return 'bg-primary';
+                    case 'STUDENT': return 'bg-secondary';
+                    default: return 'bg-light text-dark';
+                }
+            };
+
             onMounted(() => {
                 fetchClubs();
-                clubModal = new bootstrap.Modal(document.getElementById('clubModal'));
+                userModal = new bootstrap.Modal(document.getElementById('userModal'));
+                watch(activeView, (newView) => {
+                    if (newView === 'users') {
+                        fetchUsers();
+                    }
+                });
             });
 
             return {
                 activeView,
                 clubs,
-                isEditingClub,
-                editableClub,
-                openClubModal,
-                saveClub,
-                deleteClub,
+                users,
+                editableUser,
+                openUserModal,
+                saveUser,
+                deleteUser,
                 logout,
+                parsedRoles,
+                roleClass,
             };
         }
     }).mount('#admin-app');

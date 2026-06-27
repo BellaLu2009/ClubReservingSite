@@ -238,7 +238,7 @@
                 <div class="hero-section"><h1 class="hero-title">个人信息主页</h1><p class="hero-subtitle">管理您的个人信息和偏好设置</p></div>
                 <div style="background:#fff; border-radius:24px; max-width:500px; margin:0 auto; box-shadow:0 4px 20px rgba(0,0,0,0.015); overflow:hidden;">
                     <div style="padding:32px; background: #fafafa; border-bottom:1px solid #eee; display:flex; align-items:center; gap:20px;">
-                        <img :src="profileForm.avatar_url" style="width:64px; height:64px; border-radius:50%; background:#e8e8ed; object-fit: cover;">
+                        <img :src="avatarPreview || currentUser.avatar_url" style="width:64px; height:64px; border-radius:50%; background:#e8e8ed; object-fit: cover; cursor:pointer;" @click="$refs.avatarInput.click()">
                         <div>
                             <div style="font-size:20px; font-weight:600;">{{ currentUser.name }}</div>
                             <div style="font-size:13px; color:var(--apple-text-sub); margin-top:4px;">班级：{{ currentUser.class_name || 'N/A' }} &nbsp;|&nbsp; 学号：{{ currentUser.student_id || 'N/A' }}</div>
@@ -248,7 +248,11 @@
                     <div style="padding:32px;">
                         <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">基本信息设置</h3>
                         <div style="margin-bottom:10px;"><label class="form-label">用户名</label><input type="text" class="apple-input" v-model="profileForm.username"></div>
-                        <div style="margin-bottom:16px;"><label class="form-label">头像 URL</label><input type="text" class="apple-input" v-model="profileForm.avatar_url"></div>
+                        <div style="margin-bottom:16px;">
+                            <label class="form-label">更换头像</label>
+                            <input type="file" ref="avatarInput" @change="onFileChange" accept="image/*" style="display: none;">
+                            <button class="apple-btn secondary" style="width:100%;" @click="$refs.avatarInput.click()">选择图片</button>
+                        </div>
                         <button class="apple-btn" style="width:100%; height:40px;" @click="updateProfile">保存基本信息</button>
 
                         <hr style="border:none; border-top:1px solid #eee; margin: 24px 0;">
@@ -319,7 +323,8 @@
             const searchQuery = ref('');
             const selectedCategory = ref('ALL');
             const selectedDay = ref(0);
-            const profileForm = ref({ username: '', avatar_url: '' });
+            const profileForm = ref({ username: '', avatarFile: null });
+            const avatarPreview = ref(null);
             const passwordForm = ref({ oldPassword: '', newPassword: '', studentIdVerify: '' });
             const isForgettingPassword = ref(false);
             const noticeForm = ref({ title: '', content: '' });
@@ -331,9 +336,14 @@
             const modalType = ref('success');
             const timeSlots = [{ label: '16:00 - 17:30', start: '16:00:00', end: '17:30:00' }, { label: '17:30 - 19:00', start: '17:30:00', end: '19:00:00' }];
 
-            const apiRequest = async (endpoint, method = 'GET', body = null) => {
-                const options = { method, headers: { 'Content-Type': 'application/json' } };
-                if (body) options.body = JSON.stringify(body);
+            const apiRequest = async (endpoint, method = 'GET', body = null, isFormData = false) => {
+                const options = { method };
+                if (isFormData) {
+                    options.body = body;
+                } else {
+                    options.headers = { 'Content-Type': 'application/json' };
+                    if (body) options.body = JSON.stringify(body);
+                }
                 const response = await fetch(API_BASE_URL + endpoint, options);
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || '请求失败');
@@ -354,7 +364,6 @@
                     }
                     currentUser.value = user;
                     profileForm.value.username = user.username;
-                    profileForm.value.avatar_url = user.avatar_url;
                     if (isDualRole.value) {
                         activeRole.value = 'STUDENT';
                     }
@@ -396,7 +405,6 @@
                     if (user) {
                         currentUser.value = user;
                         profileForm.value.username = user.username;
-                        profileForm.value.avatar_url = user.avatar_url;
                         if (isDualRole.value) {
                             activeRole.value = 'STUDENT';
                         }
@@ -431,11 +439,31 @@
                 activeTab.value = 'search'; // 切换后返回默认视图
             };
 
+            const onFileChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    profileForm.value.avatarFile = file;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        avatarPreview.value = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
             const updateProfile = async () => {
+                const formData = new FormData();
+                formData.append('username', profileForm.value.username);
+                if (profileForm.value.avatarFile) {
+                    formData.append('avatar', profileForm.value.avatarFile);
+                }
+
                 try {
-                    await apiRequest('/user/profile', 'PUT', profileForm.value);
+                    const updatedUser = await apiRequest('/user/profile', 'PUT', formData, true);
+                    currentUser.value = updatedUser;
+                    avatarPreview.value = null;
+                    profileForm.value.avatarFile = null;
                     showModal('更新成功', '您的个人信息已更新。', 'success');
-                    await checkSession(); // Re-fetch user data
                 } catch (error) { showModal('更新失败', error.message, 'error'); }
             };
 
@@ -518,7 +546,7 @@
                 filteredClubs, isAdmin, isLeader, notifications, leaderReservations, leaderClub, noticeForm, timeSlots,
                 login, register, logout, getReservationStatus, handleReserve, handleCancel, savePassword, updateProfile,
                 dayText, closeModal, getMatchReservation, showScheduleDetail, getClubName, formatTime, publishNotice,
-                isDualRole, activeRole, toggleRole
+                isDualRole, activeRole, toggleRole, onFileChange, avatarPreview
             };
         }
     }).mount('#app');
