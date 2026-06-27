@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ 点击速度检测器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0b1120 0%, #1a2639 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 64px;
+            padding: 40px 40px 50px;
+            width: 100%;
+            max-width: 580px;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: box-shadow 0.2s ease;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            color: #eef5ff;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        h1 span {
+            background: #f6b83d;
+            color: #0b1120;
+            font-size: 1.8rem;
+            padding: 0 18px;
+            border-radius: 80px;
+            box-shadow: inset 0 -3px 0 #8f6a1f;
+        }
+
+        .sub {
+            color: #a6bbdd;
+            font-weight: 300;
+            letter-spacing: 1px;
+            margin-bottom: 32px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+            padding-bottom: 16px;
+            font-size: 1rem;
+        }
+
+        .click-area {
+            background: #212d42;
+            border-radius: 100px;
+            padding: 8px;
+            margin: 16px 0 28px;
+            box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        #clickBtn {
+            width: 100%;
+            padding: 28px 20px;
+            font-size: 2.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            border: none;
+            border-radius: 80px;
+            color: #0b1120;
+            cursor: pointer;
+            transition: all 0.08s ease;
+            box-shadow: 0 8px 0 #b16f3a, 0 12px 28px rgba(253, 160, 133, 0.3);
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            line-height: 1;
+        }
+
+        #clickBtn:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #b16f3a, 0 8px 20px rgba(253, 160, 133, 0.5);
+        }
+
+        #clickBtn:disabled {
+            opacity: 0.5;
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #7a4f2b;
+            pointer-events: none;
+            filter: grayscale(0.4);
+        }
+
+        .stats-grid {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin: 30px 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 40px;
+            padding: 14px 6px;
+            flex: 1 1 0;
+            min-width: 80px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #9bb1d4;
+            font-weight: 300;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #f0f7ff;
+            line-height: 1.3;
+            margin-top: 4px;
+        }
+
+        .stat-value.speed {
+            color: #f6b83d;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 14px;
+            margin-top: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 26px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #d3e0f5;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            flex: 1 1 auto;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .ctrl-btn:active {
+            transform: scale(0.97);
+        }
+
+        .ctrl-btn.reset-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+        }
+
+        .ctrl-btn.reset-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: #ef4444;
+            color: #fff;
+        }
+
+        .footnote {
+            margin-top: 28px;
+            color: #6c83aa;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 22px;
+        }
+
+        .footnote i {
+            font-style: normal;
+            background: #2d3b54;
+            padding: 4px 14px;
+            border-radius: 40px;
+            color: #b7cef0;
+        }
+
+        @media (max-width: 480px) {
+            .card { padding: 30px 20px; border-radius: 40px; }
+            #clickBtn { font-size: 1.8rem; padding: 22px 16px; }
+            .stat-value { font-size: 1.8rem; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>
+        ⚡ 点击速度
+        <span>CPS</span>
+    </h1>
+    <div class="sub">疯狂点击 · 测测你的手速</div>
+
+    <div class="click-area">
+        <button id="clickBtn" aria-label="点击测试按钮">👆 点我</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-label">点击次数</div>
+            <div class="stat-value" id="clickCount">0</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">当前速度</div>
+            <div class="stat-value speed" id="currentSpeed">0.00</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">峰值速度</div>
+            <div class="stat-value speed" id="peakSpeed">0.00</div>
+        </div>
+    </div>
+
+    <div class="action-row">
+        <button class="ctrl-btn" id="resetBtn" aria-label="重置数据">🔄 重置</button>
+        <button class="ctrl-btn reset-btn" id="resetPeakBtn" aria-label="重置峰值">📉 重置峰值</button>
+    </div>
+    <div class="footnote">
+        <i>⚡ 每秒点击次数 (CPS) · 实时更新</i>
+    </div>
+</div>
+
+<script>
+    (function(){
+        "use strict";
+
+        // DOM 元素
+        const clickBtn = document.getElementById('clickBtn');
+        const clickCountEl = document.getElementById('clickCount');
+        const currentSpeedEl = document.getElementById('currentSpeed');
+        const peakSpeedEl = document.getElementById('peakSpeed');
+        const resetBtn = document.getElementById('resetBtn');
+        const resetPeakBtn = document.getElementById('resetPeakBtn');
+
+        // ---------- 状态 ----------
+        let clickCount = 0;                 // 总点击次数
+        let peakCPS = 0;                   // 峰值 CPS
+
+        // 滑动窗口 (用于计算瞬时 CPS)
+        const WINDOW_MS = 1000;            // 1秒窗口
+        let clickTimestamps = [];           // 存储点击时间戳 (毫秒)
+
+        // 防连点 / 状态锁 (避免点击时重复触发)
+        let processingClick = false;
+
+        // ---------- 辅助函数 ----------
+        function formatCPS(value) {
+            return value.toFixed(2);
+        }
+
+        // 更新 UI 中的计数和速度显示
+        function updateDisplay() {
+            clickCountEl.textContent = clickCount;
+            // 计算当前 CPS (基于窗口)
+            const now = performance.now();   // 使用高精度时间
+            // 清理窗口外的时间戳 (保留最近 1 秒)
+            clickTimestamps = clickTimestamps.filter(t => (now - t) <= WINDOW_MS);
+            const cps = clickTimestamps.length;   // 窗口内点击次数 = CPS
+            currentSpeedEl.textContent = formatCPS(cps);
+
+            // 更新峰值 (如果当前 CPS 大于峰值)
+            if (cps > peakCPS) {
+                peakCPS = cps;
+                peakSpeedEl.textContent = formatCPS(peakCPS);
+            } else {
+                // 峰值不变，但显示值要保持精度
+                peakSpeedEl.textContent = formatCPS(peakCPS);
+            }
+        }
+
+        // 核心点击处理
+        function handleClick() {
+            if (processingClick) return; // 防止递归 / 重入
+            processingClick = true;
+
+            try {
+                // 增加点击计数
+                clickCount += 1;
+
+                // 记录当前时间戳 (高精度)
+                const now = performance.now();
+                clickTimestamps.push(now);
+
+                // 更新显示 (会同时清理过期时间戳 & 更新 CPS)
+                updateDisplay();
+
+                // 按钮微反馈 (轻触感)
+                clickBtn.style.transform = 'scale(0.96)';
+                setTimeout(() => {
+                    clickBtn.style.transform = 'scale(1)';
+                }, 80);
+
+            } finally {
+                processingClick = false;
+            }
+        }
+
+        // ---------- 重置逻辑 ----------
+        function resetAll() {
+            clickCount = 0;
+            clickTimestamps = [];
+            // 注意: 峰值保留? 根据设计，重置全部清零 (包括峰值)
+            peakCPS = 0;
+            updateDisplay();
+            // 额外更新峰值显示
+            peakSpeedEl.textContent = '0.00';
+            // 按钮视觉重置
+            clickBtn.disabled = false;
+        }
+
+        function resetPeakOnly() {
+            peakCPS = 0;
+            peakSpeedEl.textContent = '0.00';
+            // 重新计算当前 CPS 以保持一致性 (但峰值已归零)
+            // 调用 updateDisplay 会基于现有时间戳刷新 CPS，并可能立即产生新的峰值。
+            // 但我们希望只重置峰值，不重置计数 & 时间戳。所以手动刷新一次。
+            // 但 updateDisplay 中会重新计算峰值: 如果当前cps > peakCPS(0) 会立即变成当前cps。
+            // 为了符合「重置峰值」的直观理解: 将峰值归零，但若当前窗口内有点击，峰值会立刻变成当前cps。
+            // 这更合理: 重置峰值后，峰值会从当前速度重新开始计算。
+            // 所以我们直接调用 updateDisplay，它会重新评估峰值。
+            updateDisplay();
+        }
+
+        // ---------- 初始化 & 绑定事件 ----------
+        function init() {
+            // 重置所有状态
+            resetAll();
+
+            // 监听点击按钮
+            clickBtn.addEventListener('click', handleClick);
+
+            // 重置全部
+            resetBtn.addEventListener('click', function(e) {
+                resetAll();
+                // 额外反馈
+                clickBtn.style.transform = 'scale(0.95)';
+                setTimeout(() => { clickBtn.style.transform = 'scale(1)'; }, 100);
+            });
+
+            // 重置峰值
+            resetPeakBtn.addEventListener('click', function(e) {
+                resetPeakOnly();
+                // 微反馈
+                resetPeakBtn.style.transform = 'scale(0.92)';
+                setTimeout(() => { resetPeakBtn.style.transform = 'scale(1)'; }, 100);
+            });
+
+            // 额外: 键盘支持 (空格 / Enter 触发点击)
+            clickBtn.addEventListener('keydown', function(e) {
+                if (e.key === ' ' || e.key === 'Space' || e.key === 'Enter') {
+                    e.preventDefault();
+                    handleClick();
+                }
+            });
+
+            // 清理窗口外的时间戳 每 2 秒自动清理一次 (保证显示准确)
+            setInterval(() => {
+                // 只是触发一次更新，内部会自动清理过期时间戳
+                updateDisplay();
+            }, 2000);
+
+            // 窗口失焦时，减少不必要的性能开销 (但保留)
+            // 可选: 页面可见性变化时, 不额外处理。
+        }
+
+        // 启动
+        init();
+    })();
+</script>
+</body>
+</html>
