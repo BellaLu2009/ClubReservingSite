@@ -3,145 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>社团预约管理系统 - 后端服务版</title>
+    <title>社团预约管理系统</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E🎯%3C/text%3E%3C/svg%3E">
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            --apple-bg: #f9f9f9;
-            --apple-text: #333;
-            --apple-text-sub: #888;
-            --apple-accent: #5a9bfc;
-            --apple-danger: #f56c6c;
-            --apple-success: #67c23a;
-            --apple-warning: #e6a23c;
-            --nav-height: 48px;
+            --apple-bg: #f9f9f9; --apple-text: #333; --apple-text-sub: #888;
+            --apple-accent: #5a9bfc; --apple-danger: #f56c6c; --apple-success: #67c23a;
+            --apple-warning: #e6a23c; --nav-height: 48px;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            background-color: var(--apple-bg);
-            color: var(--apple-text);
-            margin: 0;
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
+            background-color: var(--apple-bg); color: var(--apple-text); margin: 0; padding: 0;
+            -webkit-font-smoothing: antialiased; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
         }
-
-        /* 顶部导航栏 */
         .apple-nav-wrapper {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            height: var(--nav-height);
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            z-index: 999;
-            border-bottom: 1px solid #eee;
+            position: fixed; top: 0; width: 100%; height: var(--nav-height);
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px); z-index: 999; border-bottom: 1px solid #eee;
         }
-
         .nav-container {
-            max-width: 1024px;
-            height: 100%;
-            margin: 0 auto;
-            padding: 0 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-sizing: border-box;
+            max-width: 1024px; height: 100%; margin: 0 auto; padding: 0 16px;
+            display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;
         }
-
-        .nav-brand {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--apple-text);
-        }
-
+        .nav-brand { font-size: 14px; font-weight: 600; color: var(--apple-text); }
         .nav-menu { display: flex; height: 100%; align-items: center; gap: 16px; }
         .nav-link {
-            font-size: 13px;
-            color: var(--apple-text);
-            text-decoration: none;
-            opacity: 0.6;
-            cursor: pointer;
-            font-weight: 400;
-            transition: opacity 0.25s;
+            font-size: 13px; color: var(--apple-text); text-decoration: none; opacity: 0.6;
+            cursor: pointer; font-weight: 400; transition: opacity 0.25s;
         }
         .nav-link.active { opacity: 1; font-weight: 500; }
-
-        .role-switch-zone {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(0,0,0,0.05);
-            padding: 2px;
-            border-radius: 8px;
-        }
-        .role-badge {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--apple-text-sub);
-            transition: all 0.2s;
-        }
-        .role-badge.active {
-            background: #fff;
-            color: var(--apple-text);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        /* 主体布局 */
-        .main-content {
-            max-width: 1024px;
-            margin: 0 auto;
-            padding: 80px 16px 60px 16px;
-            box-sizing: border-box;
-        }
-
+        .main-content { max-width: 1024px; margin: 0 auto; padding: 80px 16px 60px 16px; box-sizing: border-box; }
         .hero-section { text-align: center; margin-bottom: 32px; }
         .hero-title { font-size: 32px; font-weight: 600; letter-spacing: -0.5px; margin: 0 0 8px 0; }
         .hero-subtitle { font-size: 16px; color: var(--apple-text-sub); margin: 0; }
-
-        /* 搜索筛选栏 */
         .search-filter-bar {
             background: #fff; padding: 16px; border-radius: 16px; margin-bottom: 24px;
-            display: flex; flex-direction: column; gap: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+            display: flex; flex-direction: column; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.01);
         }
-        .filter-row {
-            display: flex;
-            gap: 10px;
-        }
+        .filter-row { display: flex; gap: 10px; }
         .apple-select {
-            flex-grow: 1;
-            height: 44px;
-            background: #f5f5f7;
-            border: 1px solid transparent;
-            border-radius: 10px;
-            padding: 0 12px;
-            font-size: 15px;
-            box-sizing: border-box;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
+            flex-grow: 1; height: 44px; background: #f5f5f7; border: 1px solid transparent; border-radius: 10px;
+            padding: 0 12px; font-size: 15px; box-sizing: border-box; outline: none; -webkit-appearance: none; appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
+            background-repeat: no-repeat; background-position: right 12px center;
         }
         .category-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
         .tab-btn {
             background: #f5f5f7; border: none; padding: 6px 14px; border-radius: 980px;
-            font-size: 13px; cursor: pointer; color: var(--apple-text-sub); transition: all 0.2s;
-            white-space: nowrap;
+            font-size: 13px; cursor: pointer; color: var(--apple-text-sub); transition: all 0.2s; white-space: nowrap;
         }
         .tab-btn.active { background: var(--apple-text); color: #fff; }
-
-        /* 卡片网格 */
         .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; }
         .apple-card {
             background: #ffffff; border-radius: 20px; padding: 24px; box-sizing: border-box;
@@ -153,8 +66,6 @@
         .card-title { font-size: 20px; font-weight: 600; margin: 0 0 8px 0; }
         .card-desc { font-size: 13px; color: var(--apple-text-sub); line-height: 1.5; margin-bottom: 16px; flex-grow: 1; }
         .capacity-bar { font-size: 12px; color: var(--apple-text-sub); margin-bottom: 12px; display: flex; justify-content: space-between; }
-
-        /* 按钮与输入框 */
         .apple-btn {
             background-color: var(--apple-accent); color: #ffffff; border: none; border-radius: 980px;
             padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
@@ -164,323 +75,150 @@
         .apple-btn.success { background-color: var(--apple-success); }
         .apple-btn.secondary { background-color: #a9a9a9; }
         .apple-btn.warning { background-color: var(--apple-warning); }
-
         .apple-input {
             width: 100%; height: 44px; background: #f5f5f7; border: 1px solid transparent;
             border-radius: 10px; padding: 0 12px; font-size: 15px; box-sizing: border-box; outline: none; transition: all 0.2s;
         }
         .apple-input:focus { background: #ffffff; border-color: var(--apple-accent); }
-
-        /* 5天课表大表格 */
-        .apple-table-wrapper { background: #ffffff; border-radius: 20px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); overflow-x: auto; }
-        .apple-table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        .apple-table th { font-size: 13px; font-weight: 500; color: var(--apple-text-sub); padding: 14px; border-bottom: 1px solid #e8e8ed; }
-        .apple-table td { padding: 16px 10px; text-align: center; border-bottom: 1px solid #f5f5f7; height: 90px; }
-
-        /* 黑色实线方块样式 (4.1 规范) */
-        .schedule-block-active {
-            background: var(--apple-text); color: #fff; border-radius: 12px; padding: 12px;
-            text-align: left; font-size: 12px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-        .schedule-block-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
-        .schedule-block-loc { opacity: 0.7; font-size: 11px; }
-
-        /* 通知列表样式 */
-        .notice-card { background: #fff; padding: 20px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.01); }
-        .notice-time { font-size: 11px; color: var(--apple-text-sub); margin-bottom: 4px; }
-        .notice-title { font-size: 16px; font-weight: 600; margin: 0 0 6px 0; }
-
         .status-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; background: #e8e8ed; color: var(--apple-text); }
         .status-tag.leader { background: #e6f7ff; color: var(--apple-accent); }
-
-        /* 自定义弹窗样式 */
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.4);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4);
+            display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px);
         }
         .modal-content {
-            background: #fff;
-            padding: 30px;
-            border-radius: 24px;
-            text-align: center;
-            width: 90%;
-            max-width: 380px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transform: scale(0.95);
+            background: #fff; padding: 30px; border-radius: 24px; text-align: center; width: 90%; max-width: 380px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); transform: scale(0.95);
             animation: modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        @keyframes modal-pop {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+        @keyframes modal-pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 20px;
-            font-size: 30px;
-            color: #fff;
+            width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            margin: 0 auto 20px; font-size: 30px; color: #fff;
         }
         .modal-icon.success-icon { background-color: var(--apple-success); }
         .modal-icon.error-icon { background-color: var(--apple-danger); }
         .modal-title { font-size: 22px; font-weight: 600; margin: 0 0 10px 0; }
         .modal-message { font-size: 14px; color: var(--apple-text-sub); margin-bottom: 25px; }
-
-        @media (max-width: 768px) {
-            .grid-container { grid-template-columns: 1fr; }
-            .hero-title { font-size: 26px; }
-            .nav-menu { gap: 10px; }
-            .nav-link { font-size: 12px; }
-        }
+        .auth-form-toggle { color: var(--apple-accent); cursor: pointer; margin-top: 15px; font-size: 14px; }
     </style>
 </head>
 <body>
 {% raw %}
 <div id="app">
-    <div class="apple-nav-wrapper">
-        <div class="nav-container">
-            <div class="role-switch-zone">
-                <div class="role-badge" :class="{active: currentRole === 'STUDENT'}" @click="switchRole('STUDENT')">学生视图</div>
-                <div class="role-badge" :class="{active: currentRole === 'CLUB_LEADER'}" @click="switchRole('CLUB_LEADER')">社长后台</div>
-            </div>
-
-            <div class="nav-menu">
-                <template v-if="currentRole === 'STUDENT'">
+    <div v-if="currentUser">
+        <div class="apple-nav-wrapper">
+            <div class="nav-container">
+                <div class="nav-brand">社团预约</div>
+                <div class="nav-menu">
                     <span class="nav-link" :class="{active: activeTab === 'search'}" @click="activeTab = 'search'">社团搜索</span>
                     <span class="nav-link" :class="{active: activeTab === 'schedule'}" @click="activeTab = 'schedule'">每周课表</span>
                     <span class="nav-link" :class="{active: activeTab === 'notices'}" @click="activeTab = 'notices'">通知中心</span>
-                </template>
-                <template v-if="currentRole === 'CLUB_LEADER'">
-                    <span class="nav-link" :class="{active: activeTab === 'leader-manage'}" @click="activeTab = 'leader-manage'">预约名册</span>
-                    <span class="nav-link" :class="{active: activeTab === 'leader-notice'}" @click="activeTab = 'leader-notice'">发布通知</span>
-                </template>
-
-                <span class="nav-link" :class="{active: activeTab === 'profile'}" @click="activeTab = 'profile'">个人中心</span>
+                    <span class="nav-link" :class="{active: activeTab === 'profile'}" @click="activeTab = 'profile'">个人中心</span>
+                    <a href="#" @click.prevent="logout" class="nav-link">退出</a>
+                </div>
             </div>
+        </div>
+
+        <main class="main-content">
+            <!-- 社团搜索 -->
+            <div v-if="activeTab === 'search'">
+                <div class="hero-section">
+                    <h1 class="hero-title">社团模块自由预约</h1>
+                    <p class="hero-subtitle">多维度筛选，找到你的热爱</p>
+                </div>
+                <div class="search-filter-bar">
+                    <div class="filter-row">
+                        <input type="text" class="apple-input" v-model="searchQuery" placeholder="🔍 输入社团名称快速检索...">
+                        <select class="apple-select" v-model.number="selectedDay">
+                            <option value="0">所有日期</option>
+                            <option value="1">周一</option><option value="2">周二</option><option value="3">周三</option>
+                            <option value="4">周四</option><option value="5">周五</option>
+                        </select>
+                    </div>
+                    <div class="category-tabs">
+                        <button class="tab-btn" :class="{active: selectedCategory === 'ALL'}" @click="selectedCategory = 'ALL'">全部</button>
+                        <button class="tab-btn" :class="{active: selectedCategory === 'SPORTS'}" @click="selectedCategory = 'SPORTS'">体育类</button>
+                        <button class="tab-btn" :class="{active: selectedCategory === 'ACADEMIC'}" @click="selectedCategory = 'ACADEMIC'">学术类</button>
+                        <button class="tab-btn" :class="{active: selectedCategory === 'PUBLIC_WELFARE'}" @click="selectedCategory = 'PUBLIC_WELFARE'">公益类</button>
+                    </div>
+                </div>
+                <div class="grid-container">
+                    <div class="apple-card" v-for="club in filteredClubs" :key="club.club_id">
+                        <div>
+                            <div class="card-meta">每周{{ dayText(club.day_of_week) }} · {{ club.start_time.slice(0,5) }}-{{ club.end_time.slice(0,5) }}</div>
+                            <h2 class="card-title">{{ club.name }}</h2>
+                            <p class="card-desc">{{ club.description }}</p>
+                        </div>
+                        <div>
+                            <div class="capacity-bar">
+                                <span>📍 {{ club.location }}</span>
+                                <span>名额: {{ club.current_capacity }} / {{ club.max_capacity }} <span v-if="club.waitlist_count > 0" style="color: var(--apple-warning)">(+{{club.waitlist_count}}人等候)</span></span>
+                            </div>
+                            <button v-if="getReservationStatus(club.club_id) === 'ACTIVE'" class="apple-btn danger" @click="handleCancel(club.club_id)">取消预约</button>
+                            <button v-else-if="getReservationStatus(club.club_id) === 'WAITLISTED'" class="apple-btn warning" @click="handleCancel(club.club_id)">取消等候</button>
+                            <button v-else-if="club.current_capacity < club.max_capacity" class="apple-btn" @click="handleReserve(club)">立即预约</button>
+                            <button v-else class="apple-btn secondary" @click="handleReserve(club)">加入等候</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 个人中心 -->
+            <div v-if="activeTab === 'profile'">
+                <div class="hero-section"><h1 class="hero-title">个人信息主页</h1><p class="hero-subtitle">管理您的个人信息和偏好设置</p></div>
+                <div style="background:#fff; border-radius:24px; max-width:500px; margin:0 auto; box-shadow:0 4px 20px rgba(0,0,0,0.015); overflow:hidden;">
+                    <div style="padding:32px; background: #fafafa; border-bottom:1px solid #eee; display:flex; align-items:center; gap:20px;">
+                        <img :src="currentUser.avatar_url" style="width:64px; height:64px; border-radius:50%; background:#e8e8ed; object-fit: cover;">
+                        <div>
+                            <div style="font-size:20px; font-weight:600;">{{ currentUser.name }}</div>
+                            <div style="font-size:13px; color:var(--apple-text-sub); margin-top:4px;">
+                                班级：{{ currentUser.class_name || 'N/A' }} &nbsp;|&nbsp; 学号：{{ currentUser.student_id || 'N/A' }}
+                            </div>
+                            <div style="margin-top:10px; display:flex; gap:6px;">
+                                <span v-for="role in currentUser.roles" :key="role" class="status-tag" :class="{leader: role === 'CLUB_LEADER'}">{{ role }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding:32px;">
+                        <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">功能与选项</h3>
+                        <a v-if="isLeader" href="/admin" target="_blank" class="apple-btn secondary" style="width:100%; height:40px; text-align:center; text-decoration:none; line-height:2.2; display:block;">进入后台管理系统</a>
+                        <div style="margin-top:16px;">
+                            <label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">旧密码</label>
+                            <input type="password" class="apple-input" v-model="passwordForm.oldPassword" placeholder="请输入您的旧密码">
+                        </div>
+                        <div style="margin-top:10px;">
+                            <label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">新密码</label>
+                            <input type="password" class="apple-input" v-model="passwordForm.newPassword" placeholder="请输入新密码">
+                        </div>
+                        <button class="apple-btn" style="width:100%; height:40px; margin-top:16px;" @click="savePassword">保存密码</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 登录/注册弹窗 -->
+    <div v-if="!currentUser" class="modal-overlay">
+        <div class="modal-content">
+            <h4 class="modal-title">{{ isLoginView ? '登录' : '注册' }}</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <input v-if="!isLoginView" type="text" class="apple-input" v-model="authForm.name" placeholder="姓名">
+                <input type="text" class="apple-input" v-model="authForm.username" placeholder="用户名">
+                <input type="password" class="apple-input" v-model="authForm.password" placeholder="密码">
+            </div>
+            <button v-if="isLoginView" class="apple-btn" style="width:100%;" @click="login">登录</button>
+            <button v-else class="apple-btn" style="width:100%;" @click="register">注册</button>
+            <p class="auth-form-toggle" @click="isLoginView = !isLoginView">
+                {{ isLoginView ? '还没有账户？立即注册' : '已有账户？前往登录' }}
+            </p>
         </div>
     </div>
 
-    <main class="main-content">
-
-        <div v-if="currentRole === 'STUDENT' && activeTab === 'search'">
-            <div class="hero-section">
-                <h1 class="hero-title">社团模块自由预约</h1>
-                <p class="hero-subtitle">多维度筛选，找到你的热爱</p>
-            </div>
-
-            <div class="search-filter-bar">
-                <div class="filter-row">
-                    <input type="text" class="apple-input" v-model="searchQuery" placeholder="🔍 输入社团名称快速检索...">
-                    <select class="apple-select" v-model.number="selectedDay">
-                        <option value="0">所有日期</option>
-                        <option value="1">周一</option>
-                        <option value="2">周二</option>
-                        <option value="3">周三</option>
-                        <option value="4">周四</option>
-                        <option value="5">周五</option>
-                    </select>
-                </div>
-                <div class="category-tabs">
-                    <button class="tab-btn" :class="{active: selectedCategory === 'ALL'}" @click="selectedCategory = 'ALL'">全部</button>
-                    <button class="tab-btn" :class="{active: selectedCategory === 'SPORTS'}" @click="selectedCategory = 'SPORTS'">体育类</button>
-                    <button class="tab-btn" :class="{active: selectedCategory === 'ACADEMIC'}" @click="selectedCategory = 'ACADEMIC'">学术类</button>
-                    <button class="tab-btn" :class="{active: selectedCategory === 'PUBLIC_WELFARE'}" @click="selectedCategory = 'PUBLIC_WELFARE'">公益类</button>
-                </div>
-            </div>
-
-            <div class="grid-container">
-                <div class="apple-card" v-for="club in filteredClubs" :key="club.club_id">
-                    <div>
-                        <div class="card-meta">每周{{ dayText(club.day_of_week) }} · {{ club.start_time.slice(0,5) }}-{{ club.end_time.slice(0,5) }}</div>
-                        <h2 class="card-title">{{ club.name }}</h2>
-                        <p class="card-desc">{{ club.description }}</p>
-                    </div>
-                    <div>
-                        <div class="capacity-bar">
-                            <span>📍 {{ club.location }}</span>
-                            <span>名额: {{ club.current_capacity }} / {{ club.max_capacity }} <span v-if="club.waitlist_count > 0" style="color: var(--apple-warning)">(+{{club.waitlist_count}}人等候)</span></span>
-                        </div>
-                        <button v-if="getReservationStatus(club.club_id) === 'ACTIVE'" class="apple-btn danger" style="width: 100%;" @click="handleCancel(club.club_id)">
-                            取消预约
-                        </button>
-                        <button v-else-if="getReservationStatus(club.club_id) === 'WAITLISTED'" class="apple-btn warning" style="width: 100%;" @click="handleCancel(club.club_id)">
-                            取消等候
-                        </button>
-                        <button v-else-if="club.current_capacity < club.max_capacity" class="apple-btn" style="width: 100%;" @click="handleReserve(club)">
-                            立即预约
-                        </button>
-                        <button v-else class="apple-btn secondary" style="width: 100%;" @click="handleReserve(club)">
-                            加入等候
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="currentRole === 'STUDENT' && activeTab === 'schedule'">
-            <div class="hero-section">
-                <h1 class="hero-title">每周日程表</h1>
-                <p class="hero-subtitle">直观查看您已成功预约的活动</p>
-            </div>
-
-            <div class="apple-table-wrapper">
-                <table class="apple-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 16%;">活动时段</th>
-                            <th>周一</th>
-                            <th>周二</th>
-                            <th>周三</th>
-                            <th>周四</th>
-                            <th>周五</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="slot in timeSlots" :key="slot.label">
-                            <td style="font-weight: 600; font-size: 13px; color:var(--apple-text);">{{ slot.label }}</td>
-                            <td v-for="day in [1,2,3,4,5]" :key="day">
-                                <div v-if="getMatchReservation(day, slot)" class="schedule-block-active" @click="showScheduleDetail(getMatchReservation(day, slot))">
-                                    <div class="schedule-block-title">{{ getMatchReservation(day, slot).name }}</div>
-                                    <div class="schedule-block-loc">📍 {{ getMatchReservation(day, slot).location }}</div>
-                                </div>
-                                <span v-else style="color: #e8e8ed;">—</span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div v-if="currentRole === 'STUDENT' && activeTab === 'notices'">
-            <div class="hero-section">
-                <h1 class="hero-title">社团订阅通知</h1>
-                <p class="hero-subtitle">仅显示您已预约社团发布的公告</p>
-            </div>
-
-            <div v-if="filteredNotifications.length === 0" style="text-align:center; padding: 40px; color: var(--apple-text-sub);">
-                暂无已订阅社团发布的活动通知。
-            </div>
-            <div v-else>
-                <div class="notice-card" v-for="notice in filteredNotifications" :key="notice.notification_id">
-                    <div class="notice-time">{{ formatTime(notice.created_at) }} · 发自：【{{ getClubName(notice.club_id) }}】</div>
-                    <h3 class="notice-title">{{ notice.title }}</h3>
-                    <p style="margin:0; font-size:14px; color:var(--apple-text-sub); line-height:1.6;">{{ notice.content }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="currentRole === 'CLUB_LEADER' && activeTab === 'leader-manage'">
-            <div class="hero-section">
-                <h1 class="hero-title">预约学生名单管理</h1>
-                <p class="hero-subtitle">当前管理的社团：<b style="color:var(--apple-accent)">{{ leaderClub?.name }}</b></p>
-            </div>
-
-            <div class="apple-table-wrapper">
-                <h3 style="margin: 8px 12px; font-size:15px;">已成功预约及等候的学生名册</h3>
-                <table class="apple-table">
-                    <thead>
-                        <tr>
-                            <th>学号</th>
-                            <th>姓名</th>
-                            <th>班级</th>
-                            <th>状态</th>
-                            <th>提交时间</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="res in leaderReservations" :key="res.reservation_id">
-                            <td>{{ res.student_id }}</td>
-                            <td style="font-weight:600;">{{ res.studentName }}</td>
-                            <td>{{ res.class_name }}</td>
-                            <td>
-                                <span class="status-tag" :class="{ 'leader': res.status === 'ACTIVE', 'warning': res.status === 'WAITLISTED' }">{{ res.status }}</span>
-                            </td>
-                            <td>{{ formatTime(res.created_at) }}</td>
-                        </tr>
-                        <tr v-if="leaderReservations.length === 0">
-                            <td colspan="5" style="color:var(--apple-text-sub); padding:30px;">暂无学生提交本模块预约</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div v-if="currentRole === 'CLUB_LEADER' && activeTab === 'leader-notice'">
-            <div class="hero-section">
-                <h1 class="hero-title">向社员发布全新活动通知</h1>
-                <p class="hero-subtitle">发布后，已预约【{{ leaderClub?.name }}】的学生将在其“通知中心”即时查收</p>
-            </div>
-
-            <div style="background:#fff; padding:32px; border-radius:24px; max-width:500px; margin:0 auto; box-shadow:0 4px 12px rgba(0,0,0,0.01);">
-                <div style="margin-bottom:16px;">
-                    <label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">活动公告标题</label>
-                    <input type="text" class="apple-input" v-model="noticeForm.title" placeholder="请输入通知主题...">
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">公告具体正文</label>
-                    <textarea class="apple-input" v-model="noticeForm.content" style="height:120px; padding:12px; font-family:inherit; resize:none;" placeholder="请编写具体的活动变动、时间、地点或所需携带的工具器材..."></textarea>
-                </div>
-                <button class="apple-btn success" style="width:100%; height:44px;" @click="publishNotice">确认并全员推送</button>
-            </div>
-        </div>
-
-        <div v-if="activeTab === 'profile'">
-            <div class="hero-section">
-                <h1 class="hero-title">个人信息主页</h1>
-                <p class="hero-subtitle">管理您的个人信息和偏好设置</p>
-            </div>
-
-            <div style="background:#fff; border-radius:24px; max-width:500px; margin:0 auto; box-shadow:0 4px 20px rgba(0,0,0,0.015); overflow:hidden;">
-                <div style="padding:32px; background: #fafafa; border-bottom:1px solid #eee; display:flex; align-items:center; gap:20px;">
-                    <img :src="currentUser.avatar_url" style="width:64px; height:64px; border-radius:50%; background:#e8e8ed; object-fit: cover;">
-                    <div>
-                        <div style="font-size:20px; font-weight:600;">{{ currentUser.name }}</div>
-                        <div style="font-size:13px; color:var(--apple-text-sub); margin-top:4px;">
-                            班级：{{ currentUser.class_name }} &nbsp;|&nbsp; 学号：{{ currentUser.student_id }}
-                        </div>
-                        <div style="margin-top:10px; display:flex; gap:6px;">
-                            <span v-for="role in currentUser.roles" :key="role" class="status-tag" :class="{leader: role === 'CLUB_LEADER'}">{{ role }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="padding:32px;">
-                    <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">功能与选项</h3>
-                    <a v-if="isLeader" href="/admin" target="_blank" class="apple-btn secondary" style="width:100%; height:40px; text-align:center; text-decoration:none; line-height:2.2;">
-                        进入后台管理系统
-                    </a>
-                    <div style="margin-top:16px;">
-                        <label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">旧密码</label>
-                        <input type="password" class="apple-input" v-model="passwordForm.oldPassword" placeholder="请输入您的旧密码">
-                    </div>
-                    <div style="margin-top:10px;">
-                        <label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">新密码</label>
-                        <input type="password" class="apple-input" v-model="passwordForm.newPassword" placeholder="请输入新密码">
-                    </div>
-                    <button class="apple-btn" style="width:100%; height:40px; margin-top:16px;" @click="savePassword">保存更改</button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- 自定义弹窗 -->
+    <!-- 通用通知弹窗 -->
     <div v-if="isModalVisible" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-icon" :class="modalType === 'success' ? 'success-icon' : 'error-icon'">
-                <span v-if="modalType === 'success'">✓</span>
-                <span v-else>!</span>
+                <span v-if="modalType === 'success'">✓</span><span v-else>!</span>
             </div>
             <h4 class="modal-title">{{ modalTitle }}</h4>
             <p class="modal-message">{{ modalMessage }}</p>
@@ -494,21 +232,21 @@
 
     createApp({
         setup() {
-            const API_BASE_URL = 'http://127.0.0.1:5001/api';
+            const API_BASE_URL = '/api';
 
             // --- State ---
-            const currentUser = ref({ roles: [] });
-            const currentRole = ref('STUDENT');
+            const currentUser = ref(null);
             const activeTab = ref('search');
             const dbClubs = ref([]);
             const dbReservations = ref([]);
-            const dbNotifications = ref([]);
             const searchQuery = ref('');
             const selectedCategory = ref('ALL');
             const selectedDay = ref(0);
-            const noticeForm = ref({ title: '', content: '' });
             const passwordForm = ref({ oldPassword: '', newPassword: '' });
-            const leaderReservations = ref([]);
+
+            // Auth State
+            const isLoginView = ref(true);
+            const authForm = ref({ username: '', password: '', name: '' });
 
             // Modal State
             const isModalVisible = ref(false);
@@ -516,42 +254,72 @@
             const modalMessage = ref('');
             const modalType = ref('success');
 
-            const timeSlots = [
-                { label: '16:00 - 17:30', start: '16:00:00', end: '17:30:00' },
-                { label: '17:30 - 19:00', start: '17:30:00', end: '19:00:00' }
-            ];
+            // --- Methods ---
+            const apiRequest = async (endpoint, method = 'GET', body = null) => {
+                const options = {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                };
+                if (body) options.body = JSON.stringify(body);
+                const response = await fetch(API_BASE_URL + endpoint, options);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '请求失败');
+                return data;
+            };
 
-            // --- Data Fetching ---
-            const fetchData = async () => {
+            const showModal = (title, message, type = 'success') => {
+                modalTitle.value = title; modalMessage.value = message; modalType.value = type; isModalVisible.value = true;
+                if (type === 'success') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            };
+            const closeModal = () => { isModalVisible.value = false; };
+
+            const login = async () => {
                 try {
-                    const [userRes, clubsRes, reservationsRes, notificationsRes] = await Promise.all([
-                        fetch(`${API_BASE_URL}/user/u_01`),
-                        fetch(`${API_BASE_URL}/clubs`),
-                        fetch(`${API_BASE_URL}/reservations/u_01`),
-                        fetch(`${API_BASE_URL}/notifications/u_01`)
+                    const user = await apiRequest('/login', 'POST', authForm.value);
+                    currentUser.value = user;
+                    await fetchAllData();
+                } catch (error) { showModal('登录失败', error.message, 'error'); }
+            };
+
+            const register = async () => {
+                try {
+                    await apiRequest('/register', 'POST', authForm.value);
+                    showModal('注册成功', '您现在可以登录了。', 'success');
+                    isLoginView.value = true;
+                    authForm.value = { username: authForm.value.username, password: '', name: '' };
+                } catch (error) { showModal('注册失败', error.message, 'error'); }
+            };
+
+            const logout = async () => {
+                try {
+                    await apiRequest('/logout', 'POST');
+                    currentUser.value = null;
+                } catch (error) { showModal('退出失败', error.message, 'error'); }
+            };
+
+            const fetchAllData = async () => {
+                try {
+                    const [clubs, reservations] = await Promise.all([
+                        apiRequest('/clubs'),
+                        apiRequest('/reservations')
                     ]);
-                    currentUser.value = await userRes.json();
-                    dbClubs.value = await clubsRes.json();
-                    dbReservations.value = await reservationsRes.json();
-                    dbNotifications.value = await notificationsRes.json();
-                } catch (error) {
-                    console.error("Failed to fetch initial data:", error);
-                    showModal("连接失败", "无法连接到后台服务，请确保服务已运行。", "error");
-                }
+                    dbClubs.value = clubs;
+                    dbReservations.value = reservations;
+                } catch (error) { showModal('数据加载失败', error.message, 'error'); }
             };
 
-            const fetchLeaderData = async () => {
+            const checkSession = async () => {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/leader/reservations/${currentUser.value.user_id}`);
-                    leaderReservations.value = await res.json();
-                } catch (error) {
-                    console.error("Failed to fetch leader data:", error);
-                }
+                    const user = await apiRequest('/session');
+                    if (user) {
+                        currentUser.value = user;
+                        await fetchAllData();
+                    }
+                } catch (e) { currentUser.value = null; }
             };
 
-            onMounted(fetchData);
+            onMounted(checkSession);
 
-            // --- Computed Properties ---
             const filteredClubs = computed(() => {
                 return dbClubs.value.filter(c => {
                     const matchKey = c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || c.description.toLowerCase().includes(searchQuery.value.toLowerCase());
@@ -561,34 +329,7 @@
                 });
             });
 
-            const filteredNotifications = computed(() => dbNotifications.value);
-            const leaderClub = computed(() => dbClubs.value.find(c => c.leader_id === currentUser.value.user_id));
-            const isLeader = computed(() => currentUser.value.roles && currentUser.value.roles.includes('CLUB_LEADER'));
-
-            // --- Methods ---
-            const showModal = (title, message, type = 'success') => {
-                modalTitle.value = title;
-                modalMessage.value = message;
-                modalType.value = type;
-                isModalVisible.value = true;
-
-                if (type === 'success') {
-                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                }
-            };
-
-            const closeModal = () => { isModalVisible.value = false; };
-
-            const switchRole = (role) => {
-                currentRole.value = role;
-                if (role === 'STUDENT') {
-                    activeTab.value = 'search';
-                    fetchData();
-                } else {
-                    activeTab.value = 'leader-manage';
-                    fetchLeaderData();
-                }
-            };
+            const isLeader = computed(() => currentUser.value?.roles.includes('CLUB_LEADER'));
 
             const getReservationStatus = (clubId) => {
                 const reservation = dbReservations.value.find(r => r.club_id === clubId);
@@ -597,117 +338,42 @@
 
             const handleReserve = async (targetClub) => {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/reserve`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: currentUser.value.user_id, club_id: targetClub.club_id })
-                    });
-                    const resData = await response.json();
-                    if (!response.ok) throw new Error(resData.error || '操作失败');
-
-                    if (resData.status === 'ACTIVE') {
-                        showModal('预约成功！', `您已成功加入【${targetClub.name}】社团。`, 'success');
-                    } else {
-                        showModal('加入等候！', `【${targetClub.name}】名额已满，您已加入等候列表。`, 'success');
-                    }
-                    await fetchData();
-                } catch (error) {
-                    showModal('操作失败', error.message, 'error');
-                }
+                    const resData = await apiRequest('/reserve', 'POST', { club_id: targetClub.club_id });
+                    if (resData.status === 'ACTIVE') showModal('预约成功！', `您已成功加入【${targetClub.name}】。`, 'success');
+                    else showModal('加入等候！', `【${targetClub.name}】名额已满，您已加入等候列表。`, 'success');
+                    await fetchAllData();
+                } catch (error) { showModal('操作失败', error.message, 'error'); }
             };
 
             const handleCancel = async (clubId) => {
                 if (confirm('确认取消您的预约或等候吗？')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/cancel`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ user_id: currentUser.value.user_id, club_id: clubId })
-                        });
-                        if (!response.ok) throw new Error('取消失败');
+                        await apiRequest('/cancel', 'POST', { club_id: clubId });
                         showModal('取消成功', '您已成功取消。', 'success');
-                        await fetchData();
-                    } catch (error) {
-                        showModal('操作失败', error.message, 'error');
-                    }
-                }
-            };
-
-            const getMatchReservation = (day, slot) => {
-                const res = dbReservations.value.find(r => {
-                    const club = dbClubs.value.find(c => c.club_id === r.club_id);
-                    return r.status === 'ACTIVE' && club && club.day_of_week === day && club.start_time === slot.start;
-                });
-                return res ? dbClubs.value.find(c => c.club_id === res.club_id) : null;
-            };
-
-            const showScheduleDetail = (club) => {
-                if (confirm(`【${club.name}】\n活动地点：${club.location}\n\n是否决定取消此社团预约？`)) {
-                    handleCancel(club.club_id);
-                }
-            };
-
-            const publishNotice = async () => {
-                if (!noticeForm.value.title || !noticeForm.value.content) {
-                    showModal('发布失败', '请完整填写标题与正文。', 'error');
-                    return;
-                }
-                try {
-                    const response = await fetch(`${API_BASE_URL}/notifications`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            leader_id: currentUser.value.user_id,
-                            title: noticeForm.value.title,
-                            content: noticeForm.value.content
-                        })
-                    });
-                    if (!response.ok) throw new Error('发布失败');
-                    showModal('发布成功', '核心通知已成功下发！', 'success');
-                    noticeForm.value = { title: '', content: '' };
-                    currentRole.value = 'STUDENT';
-                    activeTab.value = 'notices';
-                    await fetchData();
-                } catch (error) {
-                    showModal('发布失败', error.message, 'error');
+                        await fetchAllData();
+                    } catch (error) { showModal('操作失败', error.message, 'error'); }
                 }
             };
 
             const savePassword = async () => {
                 if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword) {
-                    showModal('操作失败', '请填写所有密码字段。', 'error');
-                    return;
+                    showModal('操作失败', '请填写所有密码字段。', 'error'); return;
                 }
                 try {
-                    const response = await fetch(`${API_BASE_URL}/user/password`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_id: currentUser.value.user_id,
-                            old_password: passwordForm.value.oldPassword,
-                            new_password: passwordForm.value.newPassword
-                        })
-                    });
-                    const resData = await response.json();
-                    if (!response.ok) throw new Error(resData.error || '更新失败');
+                    await apiRequest('/user/password', 'PUT', passwordForm.value);
                     showModal('修改成功', '您的密码已成功更新。', 'success');
                     passwordForm.value = { oldPassword: '', newPassword: '' };
-                } catch (error) {
-                    showModal('修改失败', error.message, 'error');
-                }
+                } catch (error) { showModal('修改失败', error.message, 'error'); }
             };
 
             const dayText = (day) => ['零', '一', '二', '三', '四', '五', '六'][day];
-            const getClubName = (id) => dbClubs.value.find(c => c.club_id === id)?.name || '未知社团';
-            const formatTime = (ts) => new Date(ts).toLocaleString('zh-CN', { hour12: false });
 
             return {
-                currentUser, currentRole, activeTab, searchQuery, selectedCategory, selectedDay,
-                timeSlots, noticeForm, passwordForm, leaderClub, leaderReservations, filteredClubs, filteredNotifications,
-                isLeader, isModalVisible, modalTitle, modalMessage, modalType,
-                switchRole, getReservationStatus, handleReserve, handleCancel, getMatchReservation,
-                showScheduleDetail, publishNotice, dayText, getClubName, formatTime,
-                closeModal, savePassword
+                currentUser, activeTab, dbClubs, dbReservations, searchQuery, selectedCategory, selectedDay,
+                passwordForm, isLoginView, authForm, isModalVisible, modalTitle, modalMessage, modalType,
+                filteredClubs, isLeader,
+                login, register, logout, getReservationStatus, handleReserve, handleCancel, savePassword,
+                dayText, closeModal
             };
         }
     }).mount('#app');
