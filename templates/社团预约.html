@@ -82,6 +82,7 @@
         .apple-input:focus { background: #ffffff; border-color: var(--apple-accent); }
         .status-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; background: #e8e8ed; color: var(--apple-text); }
         .status-tag.leader { background: #e6f7ff; color: var(--apple-accent); }
+        .status-tag.admin { background-color: #fef0f0; color: var(--apple-danger); }
         .status-tag.warning { background-color: var(--apple-warning); color: #fff; }
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4);
@@ -126,15 +127,10 @@
             <div class="nav-container">
                 <div class="nav-brand">社团预约</div>
                 <div class="nav-menu">
-                    <template v-if="currentViewRole === 'STUDENT'">
-                        <span class="nav-link" :class="{active: activeTab === 'search'}" @click="activeTab = 'search'">社团搜索</span>
-                        <span class="nav-link" :class="{active: activeTab === 'schedule'}" @click="activeTab = 'schedule'">每周课表</span>
-                        <span class="nav-link" :class="{active: activeTab === 'notices'}" @click="activeTab = 'notices'">通知中心</span>
-                    </template>
-                    <template v-if="currentViewRole === 'CLUB_LEADER'">
-                        <span class="nav-link" :class="{active: activeTab === 'leader-manage'}" @click="activeTab = 'leader-manage'">预约名册</span>
-                        <span class="nav-link" :class="{active: activeTab === 'leader-notice'}" @click="activeTab = 'leader-notice'">发布通知</span>
-                    </template>
+                    <span class="nav-link" :class="{active: activeTab === 'search'}" @click="activeTab = 'search'">社团搜索</span>
+                    <span class="nav-link" :class="{active: activeTab === 'schedule'}" @click="activeTab = 'schedule'">每周课表</span>
+                    <span class="nav-link" :class="{active: activeTab === 'notices'}" @click="activeTab = 'notices'">通知中心</span>
+                    <span v-if="isLeader" class="nav-link" :class="{active: activeTab === 'leader-manage'}" @click="activeTab = 'leader-manage'">社长后台</span>
                     <span class="nav-link" :class="{active: activeTab === 'profile'}" @click="activeTab = 'profile'">个人中心</span>
                     <a href="#" @click.prevent="logout" class="nav-link">退出</a>
                 </div>
@@ -212,11 +208,11 @@
                     </div>
                 </div>
             </div>
-            <!-- 预约名册 (社长) -->
+            <!-- 社长后台 -->
             <div v-if="activeTab === 'leader-manage'">
-                <div class="hero-section"><h1 class="hero-title">预约学生名单管理</h1><p class="hero-subtitle">当前管理的社团：<b style="color:var(--apple-accent)">{{ leaderClub?.name }}</b></p></div>
+                <div class="hero-section"><h1 class="hero-title">社长后台</h1><p class="hero-subtitle">管理您的社团预约名单和发布通知</p></div>
                 <div class="apple-table-wrapper">
-                    <h3 style="margin: 8px 12px; font-size:15px;">已成功预约及等候的学生名册</h3>
+                    <h3 style="margin: 8px 12px; font-size:15px;">预约及等候名单 for {{ leaderClub?.name }}</h3>
                     <table class="apple-table">
                         <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>状态</th><th>提交时间</th></tr></thead>
                         <tbody>
@@ -225,18 +221,15 @@
                                 <td><span class="status-tag" :class="{ 'leader': res.status === 'ACTIVE', 'warning': res.status === 'WAITLISTED' }">{{ res.status }}</span></td>
                                 <td>{{ formatTime(res.created_at) }}</td>
                             </tr>
-                            <tr v-if="leaderReservations.length === 0"><td colspan="5" style="color:var(--apple-text-sub); padding:30px;">暂无学生提交本模块预约</td></tr>
+                            <tr v-if="leaderReservations.length === 0"><td colspan="5" style="color:var(--apple-text-sub); padding:30px;">暂无学生预约</td></tr>
                         </tbody>
                     </table>
                 </div>
-            </div>
-            <!-- 发布通知 (社长) -->
-            <div v-if="activeTab === 'leader-notice'">
-                <div class="hero-section"><h1 class="hero-title">向社员发布全新活动通知</h1><p class="hero-subtitle">发布后，已预约【{{ leaderClub?.name }}】的学生将在其“通知中心”即时查收</p></div>
-                <div style="background:#fff; padding:32px; border-radius:24px; max-width:500px; margin:0 auto; box-shadow:0 4px 12px rgba(0,0,0,0.01);">
-                    <div style="margin-bottom:16px;"><label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">活动公告标题</label><input type="text" class="apple-input" v-model="noticeForm.title" placeholder="请输入通知主题..."></div>
-                    <div style="margin-bottom:20px;"><label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">公告具体正文</label><textarea class="apple-input" v-model="noticeForm.content" style="height:120px; padding:12px; font-family:inherit; resize:none;" placeholder="请编写具体的活动变动、时间、地点或所需携带的工具器材..."></textarea></div>
-                    <button class="apple-btn success" style="width:100%; height:44px;" @click="publishNotice">确认并全员推送</button>
+                <div style="background:#fff; padding:32px; border-radius:24px; max-width:500px; margin:24px auto; box-shadow:0 4px 12px rgba(0,0,0,0.01);">
+                    <h3 style="margin-top:0; margin-bottom:16px; font-size:18px;">发布新通知</h3>
+                    <div style="margin-bottom:16px;"><label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">标题</label><input type="text" class="apple-input" v-model="noticeForm.title" placeholder="请输入通知主题..."></div>
+                    <div style="margin-bottom:20px;"><label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">正文</label><textarea class="apple-input" v-model="noticeForm.content" style="height:120px; padding:12px; font-family:inherit; resize:none;" placeholder="请编写具体内容..."></textarea></div>
+                    <button class="apple-btn success" style="width:100%; height:44px;" @click="publishNotice">确认并推送</button>
                 </div>
             </div>
             <!-- 个人中心 -->
@@ -248,12 +241,13 @@
                         <div>
                             <div style="font-size:20px; font-weight:600;">{{ currentUser.name }}</div>
                             <div style="font-size:13px; color:var(--apple-text-sub); margin-top:4px;">班级：{{ currentUser.class_name || 'N/A' }} &nbsp;|&nbsp; 学号：{{ currentUser.student_id || 'N/A' }}</div>
-                            <div style="margin-top:10px; display:flex; gap:6px;"><span v-for="role in currentUser.roles" :key="role" class="status-tag" :class="{leader: role === 'CLUB_LEADER'}">{{ role }}</span></div>
+                            <div style="margin-top:10px; display:flex; gap:6px;"><span v-for="role in currentUser.roles" :key="role" class="status-tag" :class="{'leader': role === 'CLUB_LEADER', 'admin': role === 'ADMIN'}">{{ role }}</span></div>
                         </div>
                     </div>
                     <div style="padding:32px;">
                         <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">功能与选项</h3>
-                        <a v-if="isLeader" href="/admin" target="_blank" class="apple-btn secondary" style="width:100%; height:40px; text-align:center; text-decoration:none; line-height:2.2; display:block;">进入后台管理系统</a>
+                        <button v-if="isDualRole" @click="toggleRole" class="apple-btn secondary" style="width:100%; height:40px; margin-bottom: 16px;">切换至{{ activeRole === 'STUDENT' ? '社长' : '学生' }}视图</button>
+                        <a v-if="isAdmin" href="/admin" target="_blank" class="apple-btn secondary" style="width:100%; height:40px; text-align:center; text-decoration:none; line-height:2.2; display:block;">进入网站后台</a>
                         <div style="margin-top:16px;"><label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">旧密码</label><input type="password" class="apple-input" v-model="passwordForm.oldPassword" placeholder="请输入您的旧密码"></div>
                         <div style="margin-top:10px;"><label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">新密码</label><input type="password" class="apple-input" v-model="passwordForm.newPassword" placeholder="请输入新密码"></div>
                         <button class="apple-btn" style="width:100%; height:40px; margin-top:16px;" @click="savePassword">保存密码</button>
@@ -269,7 +263,7 @@
             <h4 class="modal-title">{{ isLoginView ? '登录' : '注册' }}</h4>
             <div v-if="!isLoginView" class="checkbox-container">
                 <input type="checkbox" id="is-leader-checkbox" v-model="authForm.isLeader">
-                <label for="is-leader-checkbox">我是社长 (同时拥有学生身份)</label>
+                <label for="is-leader-checkbox">同时注册为社长</label>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                 <input v-if="!isLoginView" type="text" class="apple-input" v-model="authForm.name" placeholder="姓名">
@@ -279,18 +273,6 @@
             <button v-if="isLoginView" class="apple-btn" style="width:100%;" @click="login">登录</button>
             <button v-else class="apple-btn" style="width:100%;" @click="register">注册</button>
             <p class="auth-form-toggle" @click="isLoginView = !isLoginView">{{ isLoginView ? '还没有账户？立即注册' : '已有账户？前往登录' }}</p>
-        </div>
-    </div>
-
-    <!-- 身份选择弹窗 -->
-    <div v-if="showRoleSelector" class="modal-overlay">
-        <div class="modal-content">
-            <h4 class="modal-title">选择您的视图</h4>
-            <p class="modal-message">您希望以哪种身份访问本网站？</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="apple-btn" @click="selectViewRole('STUDENT')">学生视图</button>
-                <button class="apple-btn secondary" @click="selectViewRole('CLUB_LEADER')">社长后台</button>
-            </div>
         </div>
     </div>
 
@@ -309,9 +291,8 @@
         setup() {
             const API_BASE_URL = '/api';
             const currentUser = ref(null);
-            const currentViewRole = ref('STUDENT');
-            const showRoleSelector = ref(false);
             const activeTab = ref('search');
+            const activeRole = ref('STUDENT'); // 'STUDENT' or 'CLUB_LEADER'
             const dbClubs = ref([]);
             const dbReservations = ref([]);
             const notifications = ref([]);
@@ -347,19 +328,20 @@
             const login = async () => {
                 try {
                     const user = await apiRequest('/login', 'POST', authForm.value);
-                    currentUser.value = user;
-                    if (user.roles.includes('CLUB_LEADER')) {
-                        showRoleSelector.value = true;
-                    } else {
-                        currentViewRole.value = 'STUDENT';
-                        await fetchAllData();
+                    if (user.roles.includes('ADMIN')) {
+                        window.location.href = '/admin';
+                        return;
                     }
+                    currentUser.value = user;
+                    if (isDualRole.value) {
+                        activeRole.value = 'STUDENT';
+                    }
+                    await fetchAllData();
                 } catch (error) { showModal('登录失败', error.message, 'error'); }
             };
             const register = async () => {
                 try {
-                    const payload = { ...authForm.value, role: authForm.value.isLeader ? 'CLUB_LEADER' : 'STUDENT' };
-                    await apiRequest('/register', 'POST', payload);
+                    await apiRequest('/register', 'POST', authForm.value);
                     showModal('注册成功', '您现在可以登录了。', 'success');
                     isLoginView.value = true;
                     authForm.value = { username: authForm.value.username, password: '', name: '', isLeader: false };
@@ -369,7 +351,7 @@
                 try {
                     await apiRequest('/logout', 'POST');
                     currentUser.value = null;
-                    currentViewRole.value = 'STUDENT';
+                    activeRole.value = 'STUDENT';
                 } catch (error) { showModal('退出失败', error.message, 'error'); }
             };
 
@@ -391,25 +373,19 @@
                     const user = await apiRequest('/session');
                     if (user) {
                         currentUser.value = user;
-                        currentViewRole.value = 'STUDENT'; // Default to student view on refresh
+                        if (isDualRole.value) {
+                            activeRole.value = 'STUDENT';
+                        }
                         await fetchAllData();
                     }
                 } catch (e) { currentUser.value = null; }
             };
             onMounted(checkSession);
 
-            const selectViewRole = async (role) => {
-                currentViewRole.value = role;
-                if (role === 'STUDENT') {
-                    activeTab.value = 'search';
-                } else {
-                    activeTab.value = 'leader-manage';
-                }
-                showRoleSelector.value = false;
-                await fetchAllData();
-            };
+            const isAdmin = computed(() => currentUser.value?.roles.includes('ADMIN'));
+            const isDualRole = computed(() => currentUser.value?.roles.includes('STUDENT') && currentUser.value?.roles.includes('CLUB_LEADER'));
+            const isLeader = computed(() => currentUser.value?.roles.includes('CLUB_LEADER') && activeRole.value === 'CLUB_LEADER');
 
-            const isLeader = computed(() => currentUser.value?.roles.includes('CLUB_LEADER'));
             const filteredClubs = computed(() => dbClubs.value.filter(c => {
                 const matchKey = c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || c.description.toLowerCase().includes(searchQuery.value.toLowerCase());
                 const matchCate = selectedCategory.value === 'ALL' ? true : c.category === selectedCategory.value;
@@ -418,13 +394,18 @@
             }));
 
             watch(activeTab, async (newTab) => {
-                if (newTab === 'leader-manage' || newTab === 'leader-notice') {
+                if (newTab === 'leader-manage') {
                     if (isLeader.value) {
                         leaderReservations.value = await apiRequest('/leader/reservations');
                         leaderClub.value = dbClubs.value.find(c => c.leader_id === currentUser.value.user_id);
                     }
                 }
             });
+
+            const toggleRole = () => {
+                activeRole.value = activeRole.value === 'STUDENT' ? 'CLUB_LEADER' : 'STUDENT';
+                activeTab.value = 'search'; // 切换后返回默认视图
+            };
 
             const getReservationStatus = (clubId) => {
                 const reservation = dbReservations.value.find(r => r.club_id === clubId);
@@ -490,11 +471,12 @@
             const formatTime = (ts) => new Date(ts).toLocaleString('zh-CN', { hour12: false });
 
             return {
-                currentUser, currentViewRole, showRoleSelector, activeTab, dbClubs, dbReservations, searchQuery, selectedCategory, selectedDay,
+                currentUser, activeTab, dbClubs, dbReservations, searchQuery, selectedCategory, selectedDay,
                 passwordForm, isLoginView, authForm, isModalVisible, modalTitle, modalMessage, modalType,
-                filteredClubs, isLeader, notifications, leaderReservations, leaderClub, noticeForm, timeSlots,
+                filteredClubs, isAdmin, isLeader, notifications, leaderReservations, leaderClub, noticeForm, timeSlots,
                 login, register, logout, getReservationStatus, handleReserve, handleCancel, savePassword,
-                dayText, closeModal, getMatchReservation, showScheduleDetail, getClubName, formatTime, publishNotice, selectViewRole
+                dayText, closeModal, getMatchReservation, showScheduleDetail, getClubName, formatTime, publishNotice,
+                isDualRole, activeRole, toggleRole
             };
         }
     }).mount('#app');

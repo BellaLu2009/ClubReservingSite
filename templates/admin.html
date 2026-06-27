@@ -28,6 +28,8 @@
             padding: 20px;
             background-color: #fff;
             border-right: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
         }
         .main-content {
             margin-left: 280px;
@@ -54,6 +56,9 @@
         }
         .nav-link.active:hover {
             background-color: #4a8afc;
+        }
+        .sidebar-footer {
+            margin-top: auto;
         }
         .card {
             border: 1px solid #eee;
@@ -88,24 +93,31 @@
 <div id="admin-app">
 {% raw %}
     <div class="sidebar">
-        <h1 class="sidebar-header">管理后台</h1>
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" :class="{ active: activeView === 'clubs' }" href="#" @click.prevent="activeView = 'clubs'">
-                    <i class="bi bi-collection-fill me-2"></i> 社团管理
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" :class="{ active: activeView === 'users' }" href="#" @click.prevent="activeView = 'users'">
-                    <i class="bi bi-people-fill me-2"></i> 用户管理
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" :class="{ active: activeView === 'reservations' }" href="#" @click.prevent="activeView = 'reservations'">
-                    <i class="bi bi-calendar-check-fill me-2"></i> 预约记录
-                </a>
-            </li>
-        </ul>
+        <div>
+            <h1 class="sidebar-header">管理后台</h1>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" :class="{ active: activeView === 'clubs' }" href="#" @click.prevent="activeView = 'clubs'">
+                        <i class="bi bi-collection-fill me-2"></i> 社团管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" :class="{ active: activeView === 'users' }" href="#" @click.prevent="activeView = 'users'">
+                        <i class="bi bi-people-fill me-2"></i> 用户管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" :class="{ active: activeView === 'reservations' }" href="#" @click.prevent="activeView = 'reservations'">
+                        <i class="bi bi-calendar-check-fill me-2"></i> 预约记录
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <a class="nav-link" href="#" @click.prevent="logout">
+                <i class="bi bi-box-arrow-left me-2"></i> 切换账号
+            </a>
+        </div>
     </div>
 
     <main class="main-content">
@@ -226,10 +238,25 @@
             const editableClub = ref({});
             let clubModal = null;
 
+            const apiRequest = async (endpoint, method = 'GET', body = null) => {
+                const options = {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                };
+                if (body) options.body = JSON.stringify(body);
+                const response = await fetch(API_BASE_URL + endpoint, options);
+                if (response.status === 401) { // Unauthorized
+                    window.location.href = '/'; // Redirect to login
+                    return;
+                }
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '请求失败');
+                return data;
+            };
+
             const fetchClubs = async () => {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/clubs`);
-                    clubs.value = await response.json();
+                    clubs.value = await apiRequest('/clubs');
                 } catch (error) {
                     console.error("获取社团列表失败:", error);
                     alert("获取社团列表失败!");
@@ -239,33 +266,33 @@
             const openClubModal = (club = null) => {
                 if (club) {
                     isEditingClub.value = true;
-                    editableClub.value = { ...club }; // Create a copy to edit
+                    editableClub.value = { ...club };
                 } else {
                     isEditingClub.value = false;
-                    editableClub.value = { category: 'ACADEMIC' }; // Default new club
+                    editableClub.value = { category: 'ACADEMIC' };
                 }
                 clubModal.show();
             };
 
             const saveClub = async () => {
-                // TODO: 在此实现新增或更新社团的 API 调用
                 alert(`（模拟）保存社团: ${editableClub.value.name}`);
-                console.log("Saving club:", editableClub.value);
-                // if (isEditingClub.value) {
-                //     // Call PUT /api/clubs/{id}
-                // } else {
-                //     // Call POST /api/clubs
-                // }
                 clubModal.hide();
-                await fetchClubs(); // Refresh list
+                await fetchClubs();
             };
 
             const deleteClub = async (clubId) => {
                 if (confirm(`确定要删除 ID 为 ${clubId} 的社团吗？`)) {
-                    // TODO: 在此实现删除社团的 API 调用
                     alert(`（模拟）删除社团: ${clubId}`);
-                    // await fetch(`${API_BASE_URL}/clubs/${clubId}`, { method: 'DELETE' });
-                    await fetchClubs(); // Refresh list
+                    await fetchClubs();
+                }
+            };
+
+            const logout = async () => {
+                try {
+                    await apiRequest('/logout', 'POST');
+                    window.location.href = '/';
+                } catch (error) {
+                    alert('退出失败，请重试。');
                 }
             };
 
@@ -282,6 +309,7 @@
                 openClubModal,
                 saveClub,
                 deleteClub,
+                logout,
             };
         }
     }).mount('#admin-app');

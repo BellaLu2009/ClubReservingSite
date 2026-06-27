@@ -45,8 +45,9 @@ def close_db(_):
         g.db.close()
 
 def init_db():
+    # CRITICAL FIX: Only create the DB if it doesn't exist.
     if os.path.exists(DATABASE):
-        os.remove(DATABASE)
+        return
         
     with sqlite3.connect(DATABASE) as db:
         cursor = db.cursor()
@@ -75,7 +76,9 @@ def init_db():
         
         admin_pass = generate_password_hash('admin')
         user_pass = generate_password_hash('123456')
-        cursor.execute('INSERT INTO users VALUES (?,?,?,?,?,?,?,?)', ('admin_01', 'admin', admin_pass, '管理员', 'N/A', 'N/A', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120', '["STUDENT", "CLUB_LEADER"]'))
+        # The true Administrator with the 'ADMIN' role
+        cursor.execute('INSERT INTO users VALUES (?,?,?,?,?,?,?,?)', ('admin_01', 'admin', admin_pass, '管理员', 'N/A', 'N/A', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120', '["ADMIN", "STUDENT", "CLUB_LEADER"]'))
+        # A regular student user
         cursor.execute('INSERT INTO users VALUES (?,?,?,?,?,?,?,?)', ('user_01', 'zhangsan', user_pass, '张三', '高二(3)班', '2026020315', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120', '["STUDENT"]'))
         
         clubs_data = [
@@ -96,15 +99,17 @@ def index():
 @app.route('/admin')
 @login_required
 def admin_panel():
-    if 'CLUB_LEADER' not in current_user.roles:
-        return "Access Denied", 403
+    # CRITICAL FIX: Only allow users with the 'ADMIN' role
+    if 'ADMIN' not in current_user.roles:
+        return "Access Denied: You do not have administrator privileges.", 403
     return render_template('admin.html')
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
-    username, password, name, role = data.get('username'), data.get('password'), data.get('name'), data.get('role')
-    if not all([username, password, name, role]):
+    username, password, name = data.get('username'), data.get('password'), data.get('name')
+    is_leader = data.get('isLeader', False)
+    if not all([username, password, name]):
         return jsonify({"error": "缺少必要信息"}), 400
     db = get_db()
     if db.execute('SELECT user_id FROM users WHERE username = ?', (username,)).fetchone():
@@ -113,7 +118,7 @@ def register():
     password_hash = generate_password_hash(password)
     
     user_roles = ['STUDENT']
-    if role == 'CLUB_LEADER':
+    if is_leader:
         user_roles.append('CLUB_LEADER')
     
     roles_json = json.dumps(user_roles)
@@ -152,15 +157,49 @@ def get_session():
     user_dict['roles'] = json.loads(user_dict['roles'])
     return jsonify(user_dict)
 
+@app.route('/api/user/profile', methods=['PUT'])
+@login_required
+def update_profile():
+    data = request.json
+    new_username = data.get('username')
+    new_avatar_url = data.get('avatar_url')
+    db = get_db()
+
+    if new_username and new_username != current_user.username:
+        if db.execute('SELECT user_id FROM users WHERE username = ?', (new_username,)).fetchone():
+            return jsonify({"error": "用户名已存在"}), 409
+        db.execute('UPDATE users SET username = ? WHERE user_id = ?', (new_username, current_user.id))
+
+    if new_avatar_url:
+        db.execute('UPDATE users SET avatar_url = ? WHERE user_id = ?', (new_avatar_url, current_user.id))
+    
+    db.commit()
+    return jsonify({"message": "个人信息更新成功！"})
+
 @app.route('/api/user/password', methods=['PUT'])
 @login_required
 def update_password():
     data = request.json
-    old_password, new_password = data.get('old_password'), data.get('new_password')
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    student_id_verify = data.get('student_id_verify')
     db = get_db()
     user = db.execute('SELECT * FROM users WHERE user_id = ?', (current_user.id,)).fetchone()
-    if not user or not check_password_hash(user['password_hash'], old_password):
-        return jsonify({"error": "旧密码不正确"}), 400
+
+    if not user:
+        return jsonify({"error": "用户不存在"}), 404
+
+    # Standard password change with old password
+    if old_password:
+        if not check_password_hash(user['password_hash'], old_password):
+            return jsonify({"error": "旧密码不正确"}), 400
+    # Password reset via identity verification (e.g., student ID)
+    elif student_id_verify:
+        if user['student_id'] != student_id_verify:
+            return jsonify({"error": "身份验证失败，学号不匹配"}), 403
+    else:
+        return jsonify({"error": "缺少认证信息"}), 400
+
     new_password_hash = generate_password_hash(new_password)
     db.execute('UPDATE users SET password_hash = ? WHERE user_id = ?', (new_password_hash, current_user.id))
     db.commit()
