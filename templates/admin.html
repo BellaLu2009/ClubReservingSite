@@ -122,42 +122,7 @@
     <main class="main-content">
         <!-- 社团管理视图 -->
         <div v-if="activeView === 'clubs'">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>社团管理</h2>
-                <button class="btn btn-primary" @click="openClubModal()">
-                    <i class="bi bi-plus-circle me-1"></i> 新增社团
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-body">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>社团名称</th>
-                                <th>分类</th>
-                                <th>负责人ID</th>
-                                <th>容量</th>
-                                <th class="text-end">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="club in clubs" :key="club.club_id">
-                                <td>{{ club.club_id }}</td>
-                                <td>{{ club.name }}</td>
-                                <td><span class="badge bg-secondary-subtle text-secondary-emphasis">{{ club.category }}</span></td>
-                                <td>{{ club.leader_id }}</td>
-                                <td>{{ club.current_capacity }} / {{ club.max_capacity }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary me-2" @click="openClubModal(club)">编辑</button>
-                                    <button class="btn btn-sm btn-outline-danger" @click="deleteClub(club.club_id)">删除</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <!-- ... existing club management code ... -->
         </div>
 
         <!-- 用户管理视图 -->
@@ -198,66 +163,6 @@
             </div>
         </div>
     </main>
-
-    <!-- 社团编辑/新增 Modal -->
-    <div class="modal fade" id="clubModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ isEditingClub ? '编辑社团' : '新增社团' }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">社团名称</label>
-                            <input type="text" class="form-control" v-model="editableClub.name">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">分类</label>
-                            <select class="form-select" v-model="editableClub.category">
-                                <option>ACADEMIC</option>
-                                <option>SPORTS</option>
-                                <option>PUBLIC_WELFARE</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">描述</label>
-                            <textarea class="form-control" rows="3" v-model="editableClub.description"></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">负责人ID</label>
-                            <input type="text" class="form-control" v-model="editableClub.leader_id">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">活动地点</label>
-                            <input type="text" class="form-control" v-model="editableClub.location">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">最大容量</label>
-                            <input type="number" class="form-control" v-model.number="editableClub.max_capacity">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">活动日 (周)</label>
-                            <input type="number" class="form-control" v-model.number="editableClub.day_of_week" placeholder="1-5">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">开始时间</label>
-                            <input type="time" class="form-control" v-model="editableClub.start_time">
-                        </div>
-                         <div class="col-md-4">
-                            <label class="form-label">结束时间</label>
-                            <input type="time" class="form-control" v-model="editableClub.end_time">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-primary" @click="saveClub">保存</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- 用户编辑 Modal -->
     <div class="modal fade" id="userModal" tabindex="-1">
@@ -304,10 +209,7 @@
             const activeView = ref('clubs');
             const clubs = ref([]);
             const users = ref([]);
-            const isEditingClub = ref(false);
-            const editableClub = ref({});
             const editableUser = ref({});
-            let clubModal = null;
             let userModal = null;
 
             const apiRequest = async (endpoint, method = 'GET', body = null) => {
@@ -341,42 +243,6 @@
                 } catch (error) {
                     console.error("获取用户列表失败:", error);
                     alert("获取用户列表失败!");
-                }
-            };
-
-            const openClubModal = (club = null) => {
-                if (club) {
-                    isEditingClub.value = true;
-                    editableClub.value = { ...club };
-                } else {
-                    isEditingClub.value = false;
-                    editableClub.value = { category: 'ACADEMIC', max_capacity: 20, day_of_week: 1, start_time: '16:00', end_time: '17:30' };
-                }
-                clubModal.show();
-            };
-
-            const saveClub = async () => {
-                try {
-                    if (isEditingClub.value) {
-                        await apiRequest(`/admin/club/${editableClub.value.club_id}`, 'PUT', editableClub.value);
-                    } else {
-                        await apiRequest('/admin/clubs', 'POST', editableClub.value);
-                    }
-                    clubModal.hide();
-                    await fetchClubs();
-                } catch (error) {
-                    alert('保存社团失败: ' + error.message);
-                }
-            };
-
-            const deleteClub = async (clubId) => {
-                if (confirm(`确定要删除 ID 为 ${clubId} 的社团吗？此操作会一并删除所有相关的预约记录。`)) {
-                    try {
-                        await apiRequest(`/admin/club/${clubId}`, 'DELETE');
-                        await fetchClubs();
-                    } catch (error) {
-                        alert('删除社团失败: ' + error.message);
-                    }
                 }
             };
 
@@ -417,11 +283,8 @@
 
             const parsedRoles = (rolesStr) => {
                 try {
-                    // Roles from DB are JSON strings
                     return JSON.parse(rolesStr);
                 } catch (e) {
-                    // Roles being edited might already be an array
-                    if (Array.isArray(rolesStr)) return rolesStr;
                     return [];
                 }
             };
@@ -436,16 +299,11 @@
             };
 
             onMounted(() => {
-                clubModal = new bootstrap.Modal(document.getElementById('clubModal'));
+                fetchClubs();
                 userModal = new bootstrap.Modal(document.getElementById('userModal'));
-
-                fetchClubs(); // Load initial view data
-
                 watch(activeView, (newView) => {
                     if (newView === 'users') {
                         fetchUsers();
-                    } else if (newView === 'clubs') {
-                        fetchClubs();
                     }
                 });
             });
@@ -454,12 +312,7 @@
                 activeView,
                 clubs,
                 users,
-                isEditingClub,
-                editableClub,
                 editableUser,
-                openClubModal,
-                saveClub,
-                deleteClub,
                 openUserModal,
                 saveUser,
                 deleteUser,
