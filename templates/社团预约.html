@@ -117,6 +117,7 @@
         .notice-time { font-size: 11px; color: var(--apple-text-sub); margin-bottom: 4px; }
         .notice-title { font-size: 16px; font-weight: 600; margin: 0 0 6px 0; }
         .checkbox-container { display: flex; align-items: center; justify-content: center; margin-bottom: 15px; gap: 8px; }
+        .form-label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; text-align: left; }
     </style>
 </head>
 <body>
@@ -227,8 +228,8 @@
                 </div>
                 <div style="background:#fff; padding:32px; border-radius:24px; max-width:500px; margin:24px auto; box-shadow:0 4px 12px rgba(0,0,0,0.01);">
                     <h3 style="margin-top:0; margin-bottom:16px; font-size:18px;">发布新通知</h3>
-                    <div style="margin-bottom:16px;"><label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">标题</label><input type="text" class="apple-input" v-model="noticeForm.title" placeholder="请输入通知主题..."></div>
-                    <div style="margin-bottom:20px;"><label style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">正文</label><textarea class="apple-input" v-model="noticeForm.content" style="height:120px; padding:12px; font-family:inherit; resize:none;" placeholder="请编写具体内容..."></textarea></div>
+                    <div style="margin-bottom:16px;"><label class="form-label">标题</label><input type="text" class="apple-input" v-model="noticeForm.title" placeholder="请输入通知主题..."></div>
+                    <div style="margin-bottom:20px;"><label class="form-label">正文</label><textarea class="apple-input" v-model="noticeForm.content" style="height:120px; padding:12px; font-family:inherit; resize:none;" placeholder="请编写具体内容..."></textarea></div>
                     <button class="apple-btn success" style="width:100%; height:44px;" @click="publishNotice">确认并推送</button>
                 </div>
             </div>
@@ -237,7 +238,7 @@
                 <div class="hero-section"><h1 class="hero-title">个人信息主页</h1><p class="hero-subtitle">管理您的个人信息和偏好设置</p></div>
                 <div style="background:#fff; border-radius:24px; max-width:500px; margin:0 auto; box-shadow:0 4px 20px rgba(0,0,0,0.015); overflow:hidden;">
                     <div style="padding:32px; background: #fafafa; border-bottom:1px solid #eee; display:flex; align-items:center; gap:20px;">
-                        <img :src="currentUser.avatar_url" style="width:64px; height:64px; border-radius:50%; background:#e8e8ed; object-fit: cover;">
+                        <img :src="profileForm.avatar_url" style="width:64px; height:64px; border-radius:50%; background:#e8e8ed; object-fit: cover;">
                         <div>
                             <div style="font-size:20px; font-weight:600;">{{ currentUser.name }}</div>
                             <div style="font-size:13px; color:var(--apple-text-sub); margin-top:4px;">班级：{{ currentUser.class_name || 'N/A' }} &nbsp;|&nbsp; 学号：{{ currentUser.student_id || 'N/A' }}</div>
@@ -245,12 +246,29 @@
                         </div>
                     </div>
                     <div style="padding:32px;">
+                        <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">基本信息设置</h3>
+                        <div style="margin-bottom:10px;"><label class="form-label">用户名</label><input type="text" class="apple-input" v-model="profileForm.username"></div>
+                        <div style="margin-bottom:16px;"><label class="form-label">头像 URL</label><input type="text" class="apple-input" v-model="profileForm.avatar_url"></div>
+                        <button class="apple-btn" style="width:100%; height:40px;" @click="updateProfile">保存基本信息</button>
+
+                        <hr style="border:none; border-top:1px solid #eee; margin: 24px 0;">
+
+                        <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">安全设置</h3>
+                        <div v-if="!isForgettingPassword">
+                            <div style="margin-bottom:10px;"><label class="form-label">旧密码</label><input type="password" class="apple-input" v-model="passwordForm.oldPassword" placeholder="请输入您的旧密码"></div>
+                        </div>
+                        <div v-if="isForgettingPassword">
+                             <div style="margin-bottom:10px;"><label class="form-label">学号验证</label><input type="text" class="apple-input" v-model="passwordForm.studentIdVerify" placeholder="请输入您的学号以重置密码"></div>
+                        </div>
+                        <div style="margin-bottom:16px;"><label class="form-label">新密码</label><input type="password" class="apple-input" v-model="passwordForm.newPassword" placeholder="请输入新密码"></div>
+                        <button class="apple-btn" style="width:100%; height:40px;" @click="savePassword">更新密码</button>
+                        <p class="auth-form-toggle" @click="isForgettingPassword = !isForgettingPassword">{{ isForgettingPassword ? '返回使用旧密码修改' : '忘记密码？' }}</p>
+
+                        <hr style="border:none; border-top:1px solid #eee; margin: 24px 0;">
+
                         <h3 style="margin-top:0; margin-bottom:16px; font-size:14px; color: var(--apple-text-sub);">功能与选项</h3>
                         <button v-if="isDualRole" @click="toggleRole" class="apple-btn secondary" style="width:100%; height:40px; margin-bottom: 16px;">切换至{{ activeRole === 'STUDENT' ? '社长' : '学生' }}视图</button>
                         <a v-if="isAdmin" href="/admin" target="_blank" class="apple-btn secondary" style="width:100%; height:40px; text-align:center; text-decoration:none; line-height:2.2; display:block;">进入网站后台</a>
-                        <div style="margin-top:16px;"><label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">旧密码</label><input type="password" class="apple-input" v-model="passwordForm.oldPassword" placeholder="请输入您的旧密码"></div>
-                        <div style="margin-top:10px;"><label style="font-size:12px; font-weight:500; display:block; margin-bottom:6px;">新密码</label><input type="password" class="apple-input" v-model="passwordForm.newPassword" placeholder="请输入新密码"></div>
-                        <button class="apple-btn" style="width:100%; height:40px; margin-top:16px;" @click="savePassword">保存密码</button>
                     </div>
                 </div>
             </div>
@@ -301,7 +319,9 @@
             const searchQuery = ref('');
             const selectedCategory = ref('ALL');
             const selectedDay = ref(0);
-            const passwordForm = ref({ oldPassword: '', newPassword: '' });
+            const profileForm = ref({ username: '', avatar_url: '' });
+            const passwordForm = ref({ oldPassword: '', newPassword: '', studentIdVerify: '' });
+            const isForgettingPassword = ref(false);
             const noticeForm = ref({ title: '', content: '' });
             const isLoginView = ref(true);
             const authForm = ref({ username: '', password: '', name: '', isLeader: false });
@@ -333,6 +353,8 @@
                         return;
                     }
                     currentUser.value = user;
+                    profileForm.value.username = user.username;
+                    profileForm.value.avatar_url = user.avatar_url;
                     if (isDualRole.value) {
                         activeRole.value = 'STUDENT';
                     }
@@ -373,6 +395,8 @@
                     const user = await apiRequest('/session');
                     if (user) {
                         currentUser.value = user;
+                        profileForm.value.username = user.username;
+                        profileForm.value.avatar_url = user.avatar_url;
                         if (isDualRole.value) {
                             activeRole.value = 'STUDENT';
                         }
@@ -407,6 +431,34 @@
                 activeTab.value = 'search'; // 切换后返回默认视图
             };
 
+            const updateProfile = async () => {
+                try {
+                    await apiRequest('/user/profile', 'PUT', profileForm.value);
+                    showModal('更新成功', '您的个人信息已更新。', 'success');
+                    await checkSession(); // Re-fetch user data
+                } catch (error) { showModal('更新失败', error.message, 'error'); }
+            };
+
+            const savePassword = async () => {
+                const payload = { new_password: passwordForm.value.newPassword };
+                if (isForgettingPassword.value) {
+                    payload.student_id_verify = passwordForm.value.studentIdVerify;
+                } else {
+                    payload.old_password = passwordForm.value.oldPassword;
+                }
+
+                if (!payload.new_password || (!payload.old_password && !payload.student_id_verify)) {
+                    showModal('操作失败', '请填写所有必填字段。', 'error'); return;
+                }
+
+                try {
+                    await apiRequest('/user/password', 'PUT', payload);
+                    showModal('密码更新成功', '您的密码已成功更新。', 'success');
+                    passwordForm.value = { oldPassword: '', newPassword: '', studentIdVerify: '' };
+                    isForgettingPassword.value = false;
+                } catch (error) { showModal('修改失败', error.message, 'error'); }
+            };
+
             const getReservationStatus = (clubId) => {
                 const reservation = dbReservations.value.find(r => r.club_id === clubId);
                 return reservation ? reservation.status : null;
@@ -431,16 +483,6 @@
                         await fetchAllData();
                     } catch (error) { showModal('操作失败', error.message, 'error'); }
                 }
-            };
-            const savePassword = async () => {
-                if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword) {
-                    showModal('操作失败', '请填写所有密码字段。', 'error'); return;
-                }
-                try {
-                    await apiRequest('/user/password', 'PUT', passwordForm.value);
-                    showModal('修改成功', '您的密码已成功更新。', 'success');
-                    passwordForm.value = { oldPassword: '', newPassword: '' };
-                } catch (error) { showModal('修改失败', error.message, 'error'); }
             };
             const publishNotice = async () => {
                 if (!noticeForm.value.title || !noticeForm.value.content) {
@@ -472,9 +514,9 @@
 
             return {
                 currentUser, activeTab, dbClubs, dbReservations, searchQuery, selectedCategory, selectedDay,
-                passwordForm, isLoginView, authForm, isModalVisible, modalTitle, modalMessage, modalType,
+                profileForm, passwordForm, isForgettingPassword, isLoginView, authForm, isModalVisible, modalTitle, modalMessage, modalType,
                 filteredClubs, isAdmin, isLeader, notifications, leaderReservations, leaderClub, noticeForm, timeSlots,
-                login, register, logout, getReservationStatus, handleReserve, handleCancel, savePassword,
+                login, register, logout, getReservationStatus, handleReserve, handleCancel, savePassword, updateProfile,
                 dayText, closeModal, getMatchReservation, showScheduleDetail, getClubName, formatTime, publishNotice,
                 isDualRole, activeRole, toggleRole
             };

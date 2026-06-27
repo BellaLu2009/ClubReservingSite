@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request, g, render_template
 from flask_cors import CORS
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 
 # --- App & DB Setup ---
@@ -12,6 +13,13 @@ app = Flask(__name__)
 app.secret_key = 'your-super-secret-key-change-me'
 CORS(app, supports_credentials=True)
 DATABASE = 'club_booking.db'
+UPLOAD_FOLDER = 'static/avatars'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # --- Flask-Login Setup ---
 login_manager = LoginManager()
@@ -160,21 +168,38 @@ def get_session():
 @app.route('/api/user/profile', methods=['PUT'])
 @login_required
 def update_profile():
-    data = request.json
-    new_username = data.get('username')
-    new_avatar_url = data.get('avatar_url')
     db = get_db()
-
+    
+    # Handle username update from form data
+    new_username = request.form.get('username')
     if new_username and new_username != current_user.username:
         if db.execute('SELECT user_id FROM users WHERE username = ?', (new_username,)).fetchone():
             return jsonify({"error": "用户名已存在"}), 409
         db.execute('UPDATE users SET username = ? WHERE user_id = ?', (new_username, current_user.id))
 
-    if new_avatar_url:
-        db.execute('UPDATE users SET avatar_url = ? WHERE user_id = ?', (new_avatar_url, current_user.id))
-    
+    # Handle avatar file upload
+    if 'avatar' in request.files:
+        file = request.files['avatar']
+        if file and file.filename != '' and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            extension = filename.rsplit('.', 1)[1].lower()
+            unique_filename = f"{current_user.id}_{int(datetime.datetime.now().timestamp())}.{extension}"
+            
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            
+            path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(path)
+            
+            avatar_url = f"/{path}"
+            db.execute('UPDATE users SET avatar_url = ? WHERE user_id = ?', (avatar_url, current_user.id))
+
     db.commit()
-    return jsonify({"message": "个人信息更新成功！"})
+    
+    updated_user = db.execute('SELECT * FROM users WHERE user_id = ?', (current_user.id,)).fetchone()
+    user_dict = to_dict(updated_user)
+    user_dict['roles'] = json.loads(user_dict['roles'])
+    return jsonify(user_dict)
+
 
 @app.route('/api/user/password', methods=['PUT'])
 @login_required
@@ -189,11 +214,9 @@ def update_password():
     if not user:
         return jsonify({"error": "用户不存在"}), 404
 
-    # Standard password change with old password
     if old_password:
         if not check_password_hash(user['password_hash'], old_password):
             return jsonify({"error": "旧密码不正确"}), 400
-    # Password reset via identity verification (e.g., student ID)
     elif student_id_verify:
         if user['student_id'] != student_id_verify:
             return jsonify({"error": "身份验证失败，学号不匹配"}), 403
