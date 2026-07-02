@@ -134,6 +134,9 @@ def to_dict(row):
 def is_admin():
     return current_user.is_authenticated and 'ADMIN' in current_user.roles
 
+def is_club_leader():
+    return current_user.is_authenticated and 'CLUB_LEADER' in current_user.roles
+
 def generate_check_in_code(length=6):
     """Generate a random alphanumeric check-in code."""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -148,6 +151,13 @@ def admin_panel():
     if not is_admin():
         return "Access Denied: You do not have administrator privileges.", 403
     return render_template('admin.html')
+
+@app.route('/leader')
+@login_required
+def leader_panel():
+    if not is_club_leader():
+        return "Access Denied: You do not have club leader privileges.", 403
+    return render_template('leader.html')
 
 @app.route('/api/admin/users', methods=['GET'])
 @login_required
