@@ -7,15 +7,19 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+import random
+import string
 
 # --- App & DB Setup ---
 app = Flask(__name__)
 app.secret_key = 'your-super-secret-key-change-me'
 CORS(app, supports_credentials=True)
 DATABASE = 'club_booking.db'
-UPLOAD_FOLDER = 'static/avatars'
+AVATAR_UPLOAD_FOLDER = 'static/avatars'
+CLUB_PHOTOS_UPLOAD_FOLDER = 'static/club_photos'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['AVATAR_UPLOAD_FOLDER'] = AVATAR_UPLOAD_FOLDER
+app.config['CLUB_PHOTOS_UPLOAD_FOLDER'] = CLUB_PHOTOS_UPLOAD_FOLDER
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -81,6 +85,33 @@ def init_db():
             notification_id TEXT PRIMARY KEY, club_id TEXT, title TEXT, content TEXT,
             created_at TEXT, FOREIGN KEY (club_id) REFERENCES clubs(club_id)
         );''')
+        cursor.execute('''
+        CREATE TABLE club_photos (
+            photo_id TEXT PRIMARY KEY,
+            club_id TEXT,
+            photo_url TEXT NOT NULL,
+            caption TEXT,
+            uploaded_at TEXT,
+            FOREIGN KEY (club_id) REFERENCES clubs(club_id)
+        );''')
+        cursor.execute('''
+        CREATE TABLE club_events (
+            event_id TEXT PRIMARY KEY,
+            club_id TEXT,
+            check_in_code TEXT NOT NULL,
+            created_at TEXT,
+            expires_at TEXT,
+            FOREIGN KEY (club_id) REFERENCES clubs(club_id)
+        );''')
+        cursor.execute('''
+        CREATE TABLE event_attendance (
+            attendance_id TEXT PRIMARY KEY,
+            event_id TEXT,
+            user_id TEXT,
+            checked_in_at TEXT,
+            FOREIGN KEY (event_id) REFERENCES club_events(event_id),
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );''')
         
         admin_pass = generate_password_hash('admin')
         user_pass = generate_password_hash('123456')
@@ -102,6 +133,10 @@ def to_dict(row):
 
 def is_admin():
     return current_user.is_authenticated and 'ADMIN' in current_user.roles
+
+def generate_check_in_code(length=6):
+    """Generate a random alphanumeric check-in code."""
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 @app.route('/')
 def index():
@@ -215,9 +250,9 @@ def update_profile():
             extension = filename.rsplit('.', 1)[1].lower()
             unique_filename = f"{current_user.id}_{int(datetime.datetime.now().timestamp())}.{extension}"
             
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            os.makedirs(app.config['AVATAR_UPLOAD_FOLDER'], exist_ok=True)
             
-            path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            path = os.path.join(app.config['AVATAR_UPLOAD_FOLDER'], unique_filename)
             file.save(path)
             
             avatar_url = f"/{path}"
@@ -340,6 +375,192 @@ def publish_notice():
     db.execute('INSERT INTO notifications VALUES (?, ?, ?, ?, ?)', (new_id, leader_club['club_id'], title, content, created_time))
     db.commit()
     return jsonify({"notification_id": new_id, "club_id": leader_club['club_id'], "title": title, "content": content, "created_at": created_time}), 201
+
+@app.route('/api/leader/club', methods=['PUT'])
+@login_required
+def update_leader_club():
+    db = get_db()
+    # First, verify the user is a club leader and get their club
+    leader_club = db.execute('SELECT * FROM clubs WHERE leader_id = ?', (current_user.id,)).fetchone()
+    if not leader_club:
+        return jsonify({"error": "You are not a leader of any club."}), 403
+
+    data = request.json
+    
+    # Fields that a leader is allowed to update
+    allowed_updates = {
+        'description': data.get('description'),
+        'category': data.get('category'),
+        'location': data.get('location'),
+        'max_capacity': data.get('max_capacity'),
+        'day_of_week': data.get('day_of_week'),
+        'start_time': data.get('start_time'),
+        'end_time': data.get('end_time')
+    }
+
+    # Filter out any fields that were not provided in the request
+    updates = {key: value for key, value in allowed_updates.items() if value is not None}
+
+    if not updates:
+        return jsonify({"error": "No update information provided."}), 400
+
+    # Build the dynamic SQL query
+    set_clause = ', '.join([f'{key} = ?' for key in updates.keys()])
+    values = list(updates.values())
+    values.append(leader_club['club_id']) # For the WHERE clause
+
+    query = f"UPDATE clubs SET {set_clause} WHERE club_id = ?"
+    
+    db.execute(query, values)
+    db.commit()
+
+    # Fetch the updated club details to return
+    updated_club = db.execute('SELECT * FROM clubs WHERE club_id = ?', (leader_club['club_id'],)).fetchone()
+
+    return jsonify(to_dict(updated_club))
+
+@app.route('/api/leader/club/photo', methods=['POST'])
+@login_required
+def upload_club_photo():
+    db = get_db()
+    leader_club = db.execute('SELECT * FROM clubs WHERE leader_id = ?', (current_user.id,)).fetchone()
+    if not leader_club:
+        return jsonify({"error": "You are not a leader of any club."}), 403
+
+    if 'photo' not in request.files:
+        return jsonify({"error": "No photo file provided."}), 400
+    
+    file = request.files['photo']
+    caption = request.form.get('caption', '')
+
+    if file.filename == '':
+        return jsonify({"error": "No selected file."}), 400
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        extension = filename.rsplit('.', 1)[1].lower()
+        
+        photo_id = 'p_' + str(int(datetime.datetime.now().timestamp()))
+        unique_filename = f"{leader_club['club_id']}_{photo_id}.{extension}"
+        
+        upload_folder = app.config['CLUB_PHOTOS_UPLOAD_FOLDER']
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        path = os.path.join(upload_folder, unique_filename)
+        file.save(path)
+        
+        photo_url = f"/{path}"
+        uploaded_at = datetime.datetime.now().isoformat()
+
+        db.execute(
+            'INSERT INTO club_photos (photo_id, club_id, photo_url, caption, uploaded_at) VALUES (?, ?, ?, ?, ?)',
+            (photo_id, leader_club['club_id'], photo_url, caption, uploaded_at)
+        )
+        db.commit()
+
+        new_photo = db.execute('SELECT * FROM club_photos WHERE photo_id = ?', (photo_id,)).fetchone()
+        return jsonify(to_dict(new_photo)), 201
+
+    return jsonify({"error": "File type not allowed."}), 400
+
+@app.route('/api/clubs/<string:club_id>/photos', methods=['GET'])
+def get_club_photos(club_id):
+    db = get_db()
+    photos = db.execute('SELECT * FROM club_photos WHERE club_id = ? ORDER BY uploaded_at DESC', (club_id,)).fetchall()
+    return jsonify([to_dict(p) for p in photos])
+
+@app.route('/api/leader/club/event', methods=['POST'])
+@login_required
+def create_check_in_event():
+    db = get_db()
+    leader_club = db.execute('SELECT * FROM clubs WHERE leader_id = ?', (current_user.id,)).fetchone()
+    if not leader_club:
+        return jsonify({"error": "You are not a leader of any club."}), 403
+
+    event_id = 'e_' + str(int(datetime.datetime.now().timestamp()))
+    check_in_code = generate_check_in_code()
+    created_at = datetime.datetime.now()
+    expires_at = created_at + datetime.timedelta(minutes=15)
+
+    db.execute(
+        'INSERT INTO club_events (event_id, club_id, check_in_code, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
+        (event_id, leader_club['club_id'], check_in_code, created_at.isoformat(), expires_at.isoformat())
+    )
+    db.commit()
+
+    new_event = db.execute('SELECT * FROM club_events WHERE event_id = ?', (event_id,)).fetchone()
+    return jsonify(to_dict(new_event)), 201
+
+@app.route('/api/club/check-in', methods=['POST'])
+@login_required
+def check_in():
+    data = request.json
+    check_in_code = data.get('check_in_code')
+    if not check_in_code:
+        return jsonify({"error": "Check-in code is required."}), 400
+
+    db = get_db()
+    now = datetime.datetime.now()
+
+    event = db.execute(
+        'SELECT * FROM club_events WHERE check_in_code = ? AND ? < expires_at',
+        (check_in_code, now.isoformat())
+    ).fetchone()
+
+    if not event:
+        return jsonify({"error": "Invalid or expired check-in code."}), 404
+
+    # Check if user is a member of the club (has an active reservation)
+    reservation = db.execute(
+        'SELECT * FROM reservations WHERE user_id = ? AND club_id = ? AND status = "ACTIVE"',
+        (current_user.id, event['club_id'])
+    ).fetchone()
+    if not reservation:
+        return jsonify({"error": "You are not an active member of this club."}), 403
+
+    # Check if user has already checked in for this event
+    existing_attendance = db.execute(
+        'SELECT * FROM event_attendance WHERE event_id = ? AND user_id = ?',
+        (event['event_id'], current_user.id)
+    ).fetchone()
+    if existing_attendance:
+        return jsonify({"error": "You have already checked in for this event."}), 409
+
+    attendance_id = 'a_' + str(int(datetime.datetime.now().timestamp()))
+    db.execute(
+        'INSERT INTO event_attendance (attendance_id, event_id, user_id, checked_in_at) VALUES (?, ?, ?, ?)',
+        (attendance_id, event['event_id'], current_user.id, now.isoformat())
+    )
+    db.commit()
+
+    return jsonify({"message": "Check-in successful."}), 200
+
+@app.route('/api/leader/club/event/<string:event_id>/attendance', methods=['GET'])
+@login_required
+def get_event_attendance(event_id):
+    db = get_db()
+    leader_club = db.execute('SELECT * FROM clubs WHERE leader_id = ?', (current_user.id,)).fetchone()
+    if not leader_club:
+        return jsonify({"error": "You are not a leader of any club."}), 403
+
+    # Verify the event belongs to the leader's club
+    event = db.execute('SELECT * FROM club_events WHERE event_id = ? AND club_id = ?', (event_id, leader_club['club_id'])).fetchone()
+    if not event:
+        return jsonify({"error": "Event not found or does not belong to your club."}), 404
+
+    attendance_list = db.execute(
+        '''
+        SELECT u.name, u.student_id, u.class_name, ea.checked_in_at
+        FROM event_attendance ea
+        JOIN users u ON ea.user_id = u.user_id
+        WHERE ea.event_id = ?
+        ORDER BY ea.checked_in_at
+        ''',
+        (event_id,)
+    ).fetchall()
+
+    return jsonify([to_dict(row) for row in attendance_list])
+
 
 if __name__ == '__main__':
     init_db()
