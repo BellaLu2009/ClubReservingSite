@@ -348,9 +348,18 @@
     <div v-if="!currentUser" class="modal-overlay">
         <div class="modal-content">
             <h4 class="modal-title">{{ isLoginView ? '登录' : '注册' }}</h4>
-            <div v-if="!isLoginView" class="checkbox-container">
-                <input type="checkbox" id="is-leader-checkbox" v-model="authForm.isLeader">
-                <label for="is-leader-checkbox">同时注册为社长</label>
+            <div v-if="!isLoginView">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="is-leader-checkbox" v-model="authForm.isLeader" @change="fetchUnclaimedClubs">
+                    <label for="is-leader-checkbox">同时注册为社长</label>
+                </div>
+                <div v-if="authForm.isLeader" style="margin-bottom: 10px;">
+                    <select class="apple-select" v-model="authForm.clubId">
+                        <option disabled value="">请选择您要认领的社团</option>
+                        <option v-for="club in unclaimedClubs" :key="club.club_id" :value="club.club_id">{{ club.name }}</option>
+                    </select>
+                    <p v-if="unclaimedClubs.length === 0" style="font-size:12px; color:var(--apple-warning);">当前无待认领的社团</p>
+                </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                 <input v-if="!isLoginView" type="text" class="apple-input" v-model="authForm.name" placeholder="姓名">
@@ -400,7 +409,8 @@
             const passwordForm = ref({ oldPassword: '', newPassword: '', studentIdVerify: '' });
             const isForgettingPassword = ref(false);
             const isLoginView = ref(true);
-            const authForm = ref({ username: '', password: '', name: '', isLeader: false });
+            const authForm = ref({ username: '', password: '', name: '', isLeader: false, clubId: '' });
+            const unclaimedClubs = ref([]);
             const isModalVisible = ref(false);
             const modalTitle = ref('');
             const modalMessage = ref('');
@@ -444,7 +454,7 @@
                     await apiRequest('/register', 'POST', authForm.value);
                     showModal('注册成功', '您现在可以登录了。', 'success');
                     isLoginView.value = true;
-                    authForm.value = { username: authForm.value.username, password: '', name: '', isLeader: false };
+                    authForm.value = { username: authForm.value.username, password: '', name: '', isLeader: false, clubId: '' };
                 } catch (error) { showModal('注册失败', error.message, 'error'); }
             };
             const logout = async () => {
@@ -515,6 +525,12 @@
                     loadLeaderData();
                 }
             });
+
+            const fetchUnclaimedClubs = async () => {
+                if (authForm.value.isLeader) {
+                    unclaimedClubs.value = await apiRequest('/unclaimed-clubs');
+                }
+            };
 
             const onFileChange = (e) => {
                 const file = e.target.files[0];
@@ -650,11 +666,11 @@
 
             return {
                 currentUser, activeTab, activeRole, dbClubs, dbReservations, searchQuery, selectedCategory, selectedDay,
-                profileForm, passwordForm, isForgettingPassword, isLoginView, authForm, isModalVisible, modalTitle, modalMessage, modalType,
+                profileForm, passwordForm, isForgettingPassword, isLoginView, authForm, unclaimedClubs, isModalVisible, modalTitle, modalMessage, modalType,
                 filteredClubs, isDualRole, isLeader, notifications, leaderClub, leaderReservations, leaderClubForm, leaderClubPhotos, photoCaption, photoInput, currentEvent, attendanceList, noticeForm,
                 login, register, logout, getReservationStatus, handleReserve, handleCancel, savePassword, updateProfile,
                 dayText, closeModal, getMatchReservation, showScheduleDetail, getClubName, formatTime,
-                onFileChange, avatarPreview, updateClubInfo, uploadPhoto, generateCheckIn, viewAttendance, toggleRole, publishNotice
+                onFileChange, avatarPreview, updateClubInfo, uploadPhoto, generateCheckIn, viewAttendance, toggleRole, publishNotice, fetchUnclaimedClubs
             };
         }
     }).mount('#app');

@@ -122,8 +122,8 @@ def init_db():
         
         clubs_data = [
             ("c_1", "机器人实验室", "ACADEMIC", "探索 VEX 机器人工程架构...", "admin_01", "综合楼402", 1, 2, "16:00:00", "17:30:00"),
-            ("c_2", "潮流篮球社", "SPORTS", "高强度全场战术配合...", "admin_01", "室内体育馆A厅", 30, 4, "16:00:00", "17:30:00"),
-            ("c_3", "青年志愿者协会", "PUBLIC_WELFARE", "参与社区服务和公益活动...", "admin_01", "学生活动中心", 40, 1, "17:30:00", "19:00:00"),
+            ("c_2", "潮流篮球社", "SPORTS", "高强度全场战术配合...", None, "室内体育馆A厅", 30, 4, "16:00:00", "17:30:00"),
+            ("c_3", "青年志愿者协会", "PUBLIC_WELFARE", "参与社区服务和公益活动...", None, "学生活动中心", 40, 1, "17:30:00", "19:00:00"),
         ]
         cursor.executemany('INSERT INTO clubs VALUES (?,?,?,?,?,?,?,?,?,?)', clubs_data)
         db.commit()
@@ -188,29 +188,54 @@ def admin_manage_user(user_id):
             return jsonify({"message": "User roles updated."})
         return jsonify({"error": "No roles provided"}), 400
 
+@app.route('/api/unclaimed-clubs', methods=['GET'])
+def get_unclaimed_clubs():
+    db = get_db()
+    clubs = db.execute("SELECT club_id, name FROM clubs WHERE leader_id IS NULL OR leader_id = ''").fetchall()
+    return jsonify([to_dict(c) for c in clubs])
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
     username, password, name = data.get('username'), data.get('password'), data.get('name')
     is_leader = data.get('isLeader', False)
+    club_id = data.get('clubId')
+
     if not all([username, password, name]):
         return jsonify({"error": "缺少必要信息"}), 400
+    
     db = get_db()
     if db.execute('SELECT user_id FROM users WHERE username = ?', (username,)).fetchone():
         return jsonify({"error": "用户名已存在"}), 409
+
     user_id = 'u_' + str(int(datetime.datetime.now().timestamp()))
     password_hash = generate_password_hash(password)
     
     user_roles = ['STUDENT']
     if is_leader:
+        if not club_id:
+            return jsonify({"error": "作为社长注册必须选择一个社团"}), 400
+        # Verify the selected club is actually unclaimed
+        club = db.execute("SELECT leader_id FROM clubs WHERE club_id = ?", (club_id,)).fetchone()
+        if not club or (club['leader_id'] is not None and club['leader_id'] != ''):
+            return jsonify({"error": "所选社团已被认领或不存在"}), 409
         user_roles.append('CLUB_LEADER')
-    
+
     roles_json = json.dumps(user_roles)
     avatar = f'https://i.pravatar.cc/150?u={user_id}'
-    db.execute('INSERT INTO users (user_id, username, password_hash, name, roles, avatar_url) VALUES (?, ?, ?, ?, ?, ?)',
-               (user_id, username, password_hash, name, roles_json, avatar))
-    db.commit()
+    
+    try:
+        db.execute('INSERT INTO users (user_id, username, password_hash, name, roles, avatar_url) VALUES (?, ?, ?, ?, ?, ?)',
+                   (user_id, username, password_hash, name, roles_json, avatar))
+        
+        if is_leader:
+            db.execute('UPDATE clubs SET leader_id = ? WHERE club_id = ?', (user_id, club_id))
+        
+        db.commit()
+    except db.Error as e:
+        db.rollback()
+        return jsonify({"error": f"数据库错误: {e}"}), 500
+
     return jsonify({"message": "注册成功！"}), 201
 
 @app.route('/api/login', methods=['POST'])
